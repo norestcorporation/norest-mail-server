@@ -1,0 +1,292 @@
+Stop the current OAuth investigation and do not continue changing the authentication architecture.
+
+You are looping because Chapter 3 was interpreted too broadly.
+
+IMPORTANT:
+
+The frontend is NOT part of this chapter.
+Do not inspect, modify, or build the frontend.
+The frontend/webmail UI will be implemented in a later final chapter.
+
+Chapter 3 is ONLY the backend Mail Access Layer and its real Stalwart/JMAP integration.
+
+The goal is to prove that Norest has a clean backend capability for mail access without becoming a mail proxy or mail database.
+
+Keep the currently working Chapter 3 JMAP implementation unless something is actually broken.
+
+Do NOT introduce:
+- Keycloak
+- Auth0
+- external identity providers
+- Redis
+- Kafka
+- another authentication service
+- custom OAuth infrastructure
+- a custom JMAP server
+- a Norest message database
+- a Norest mail proxy
+
+Do NOT redesign Chapter 1 or Chapter 2.
+
+--------------------------------------------------
+CHAPTER 3 ACTUAL SCOPE
+--------------------------------------------------
+
+Build and stabilize these backend capabilities:
+
+1. Norest can identify the authenticated Norest user.
+
+2. Norest can identify the user's ACTIVE mailbox.
+
+3. Norest can establish authorized access to that user's Stalwart mail account.
+
+4. The Stalwart account can obtain a JMAP session.
+
+5. The backend/integration layer must support the real mail operations needed later:
+
+   Mailbox/get
+   Mailbox/query
+   Email/query
+   Email/get
+   Email/set
+   Thread/query
+   Thread/get
+   Identity/get
+   EmailSubmission/set
+   Email/changes
+   Mailbox/changes
+   Email/queryChanges
+
+6. Keep the Stalwart JMAP client isolated inside:
+   internal/stalwart/
+
+7. Keep Norest mail-access/business logic inside:
+   internal/mail/
+
+8. Norest must NOT proxy every message operation.
+
+9. Norest must NOT store mail data.
+
+10. Stalwart remains authoritative for:
+    folders
+    messages
+    threads
+    flags
+    read/unread
+    drafts
+    attachments
+    search
+    submission
+    delivery
+
+--------------------------------------------------
+MAIL SESSION
+--------------------------------------------------
+
+Keep:
+
+POST /v1/mail/session
+
+Its job is ONLY to establish authorized mail access for the currently authenticated Norest user.
+
+It must:
+
+- verify Norest user is ACTIVE
+- find the user's ACTIVE mailbox
+- verify the mailbox belongs to that user
+- establish mail authorization
+- return only the information required by a future mail client
+
+It must NEVER:
+
+- expose Stalwart admin credentials
+- expose Norest admin credentials
+- expose another user's mailbox
+- return arbitrary account IDs supplied by the client
+- query/download messages
+- proxy message bodies
+- store message state
+
+Do not redesign this into a giant OAuth platform in Chapter 3.
+
+If the current Stalwart App Password mechanism is being used only as the development/test mail credential bridge, keep it isolated behind the mail-access abstraction and document that it is a development/current implementation detail.
+
+Do not spend the chapter replacing it with a new identity provider.
+
+--------------------------------------------------
+JMAP
+--------------------------------------------------
+
+The important thing is to prove the actual JMAP capability.
+
+The acceptance test must use the REAL Stalwart instance.
+
+Do NOT merely test that /jmap is reachable.
+
+The test must:
+
+1. Obtain a real Norest-provisioned mailbox.
+2. Establish mail authorization.
+3. Authenticate to JMAP.
+4. Obtain a JMAP session.
+5. Mailbox/get.
+6. Email/query.
+7. Email/get.
+8. Email/set.
+9. EmailSubmission/set.
+10. Deliver Alice -> Bob.
+11. Bob queries the message.
+12. Bob retrieves it.
+13. Bob marks it read.
+14. Bob flags it.
+15. Search finds it.
+16. Change/sync APIs work.
+17. Attachment handling works.
+18. No Norest database mail tables exist.
+
+--------------------------------------------------
+IMPORTANT ARCHITECTURE
+--------------------------------------------------
+
+The architecture must remain:
+
+Norest authentication
+        |
+        v
+Norest mail authorization
+        |
+        v
+Stalwart JMAP
+        |
+        +-- Mailboxes
+        +-- Emails
+        +-- Threads
+        +-- Search
+        +-- Drafts
+        +-- Submission
+        +-- Attachments
+        +-- Synchronization
+
+NOT:
+
+Browser
+   |
+Norest
+   |
+Stalwart
+   |
+Message database
+
+And NOT:
+
+Norest PostgreSQL
+   |
+Messages/Folders/Threads/Attachments
+
+--------------------------------------------------
+NO FRONTEND
+--------------------------------------------------
+
+Do not modify frontend code.
+
+Do not build UI.
+
+Do not build React components.
+
+Do not build mail pages.
+
+Do not build browser state management.
+
+Do not perform frontend integration.
+
+A Go acceptance program is sufficient to simulate the future mail client for Chapter 3.
+
+The actual frontend comes later.
+
+--------------------------------------------------
+CHAPTER 3 ACCEPTANCE
+--------------------------------------------------
+
+Chapter 3 is complete when these pass:
+
+go test ./...
+
+./scripts/test-foundation.sh
+
+./scripts/test-chapter2.sh
+
+./scripts/verify-db-clean.sh
+
+go run scripts/verify-chapter2/main.go
+
+go run scripts/verify-chapter3/main.go
+
+And the Chapter 3 E2E test proves:
+
+Norest user
+   ->
+ACTIVE Norest mailbox
+   ->
+authorized Stalwart account
+   ->
+JMAP session
+   ->
+Mailbox/get
+   ->
+Email/query
+   ->
+Email/get
+   ->
+Email/set
+   ->
+EmailSubmission/set
+   ->
+delivery
+   ->
+recipient mailbox
+   ->
+query/get
+   ->
+read/flag/search/sync
+
+Also verify:
+
+- Norest never stores message data.
+- Norest never stores folders.
+- Norest never stores attachments.
+- Norest never implements SMTP.
+- Norest never implements IMAP.
+- Norest never implements JMAP.
+- Norest never proxies normal mail traffic.
+- Stalwart admin credentials never reach normal mail access code.
+
+--------------------------------------------------
+FINAL CHAPTER 3 RESULT
+--------------------------------------------------
+
+The final architecture after Chapter 3 should be:
+
+Norest
+  = identity
+  = product state
+  = mailbox ownership
+  = mail authorization
+  = provisioning/control plane
+
+Stalwart
+  = actual mail system
+  = JMAP
+  = IMAP
+  = SMTP
+  = messages
+  = folders
+  = attachments
+  = search
+  = delivery
+  = synchronization
+
+Do not continue inventing requirements.
+
+Do not start Chapter 4.
+
+Finish only this backend mail-access layer and provide the actual test results.

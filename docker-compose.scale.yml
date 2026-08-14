@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Additional API instances for horizontal scaling
+  norest-api-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - JWT_SECRET=change-me-development-only
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=*
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    networks:
+      - norest
+
+  norest-api-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - JWT_SECRET=change-me-development-only
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=*
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    networks:
+      - norest
+
+  # Additional workers for provisioning load
+  norest-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: /norest-worker
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - WORKER_ID=worker-2
+      - JOB_LEASE_SECONDS=60
+      - JOB_HEARTBEAT_SECONDS=20
+      - JOB_MAX_ATTEMPTS=10
+      - JOB_MAX_BACKOFF_SECONDS=300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    networks:
+      - norest
+
+  norest-worker-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: /norest-worker
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - WORKER_ID=worker-3
+      - JOB_LEASE_SECONDS=60
+      - JOB_HEARTBEAT_SECONDS=20
+      - JOB_MAX_ATTEMPTS=10
+      - JOB_MAX_BACKOFF_SECONDS=300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    networks:
+      - norest
+
+networks:
+  norest:
+    name: norest
+    external: false

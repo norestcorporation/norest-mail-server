@@ -1,0 +1,152 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: norest
+      POSTGRES_USER: norest
+      POSTGRES_PASSWORD: norest
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - norest
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U norest -d norest"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  stalwart:
+    image: stalwartlabs/stalwart:v0.16
+    environment:
+      - STALWART_RECOVERY_ADMIN=admin:change-me-development-only
+    volumes:
+      - stalwart-etc:/etc/stalwart
+      - stalwart-data:/var/lib/stalwart
+    ports:
+      - "8081:8080"
+    networks:
+      - norest
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/.well-known/jmap || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  norest-api:
+    build:
+      context: .
+      dockerfile: docker/norest/Dockerfile
+    entrypoint: ["/norest-api"]
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_PUBLIC_URL=http://localhost:8081
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - STALWART_RECOVERY_ADMIN=admin:change-me-development-only
+      - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=*
+    ports:
+      - "8080:8080"
+    networks:
+      - norest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    restart: unless-stopped
+
+  norest-worker-1:
+    build:
+      context: .
+      dockerfile: docker/norest/Dockerfile
+    entrypoint: ["/norest-worker"]
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_PUBLIC_URL=http://localhost:8081
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - STALWART_RECOVERY_ADMIN=admin:change-me-development-only
+      - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=*
+      - WORKER_ID=worker-1
+      - JOB_LEASE_SECONDS=60
+      - JOB_HEARTBEAT_SECONDS=20
+    networks:
+      - norest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    restart: unless-stopped
+
+  norest-worker-2:
+    build:
+      context: .
+      dockerfile: docker/norest/Dockerfile
+    entrypoint: ["/norest-worker"]
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_PUBLIC_URL=http://localhost:8081
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - STALWART_RECOVERY_ADMIN=admin:change-me-development-only
+      - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=*
+      - WORKER_ID=worker-2
+      - JOB_LEASE_SECONDS=60
+      - JOB_HEARTBEAT_SECONDS=20
+    networks:
+      - norest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    restart: unless-stopped
+
+  norest-worker-3:
+    build:
+      context: .
+      dockerfile: docker/norest/Dockerfile
+    entrypoint: ["/norest-worker"]
+    environment:
+      - DATABASE_URL=postgres://norest:norest@postgres:5432/norest?sslmode=disable
+      - STALWART_BASE_URL=http://stalwart:8080
+      - STALWART_PUBLIC_URL=http://localhost:8081
+      - STALWART_ADMIN_USER=admin
+      - STALWART_ADMIN_PASSWORD=change-me-development-only
+      - STALWART_RECOVERY_ADMIN=admin:change-me-development-only
+      - JWT_SECRET=development-only-jwt-secret-do-not-use-in-production
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=*
+      - WORKER_ID=worker-3
+      - JOB_LEASE_SECONDS=60
+      - JOB_HEARTBEAT_SECONDS=20
+    networks:
+      - norest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  stalwart-etc:
+  stalwart-data:
+
+networks:
+  norest:
+    driver: bridge

@@ -1,0 +1,82 @@
+To run the server and see logs in real-time when calling APIs, you have several options:
+
+## Option 1: Start with Logs Visible (No Detached Mode)
+
+```bash
+docker-compose up
+```
+
+This starts all services and shows logs directly in your terminal. You'll see all log output as API calls are made.
+
+## Option 2: Start Detached, Then Follow Logs
+
+```bash
+# Start services in background
+docker-compose up -d
+
+# Follow all logs in real-time
+docker-compose logs -f
+```
+
+## Option 3: Follow Specific Service Logs
+
+```bash
+# Start services in background
+docker-compose up -d
+
+# Follow only API logs
+docker-compose logs -f norest-api
+
+# Follow only worker logs
+docker-compose logs -f norest-worker
+
+# Follow only database logs
+docker-compose logs -f postgres
+```
+
+## Option 4: Use the Development Script with Logs
+
+The `./scripts/dev-up.sh` script starts services in detached mode, so you'll need to follow logs afterward:
+
+```bash
+./scripts/dev-up.sh
+docker-compose logs -f norest-api
+```
+
+## Recommended Workflow for API Testing
+
+```bash
+# 1. Start services
+docker-compose up -d
+
+# 2. In one terminal, follow API logs
+docker-compose logs -f norest-api
+
+# 3. In another terminal, make your API calls
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"SecurePassword123!"}'
+```
+
+## View Logs for All Services at Once
+
+```bash
+docker-compose logs -f
+```
+
+This shows interleaved logs from all services (postgres, stalwart, norest-api, workers).
+
+## Stop Viewing Logs
+
+Press `Ctrl+C` to stop following logs. The services will continue running in the background.
+
+## Stop Services Completely
+
+```bash
+docker-compose down
+```
+
+This stops all services and removes the containers.
+
+**Tip:** For API development, I recommend using `docker-compose logs -f norest-api` in one terminal while making API calls in another terminal. This gives you focused visibility into the API layer.

@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: norest
+      POSTGRES_USER: norest
+      POSTGRES_PASSWORD: norest
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U norest"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+
+  stalwart:
+    image: stalwartlabs/stalwart:v0.16
+    environment:
+      - STALWART_RECOVERY_ADMIN=admin@norest.test
+    volumes:
+      - stalwart-data:/var/lib/stalwart
+      - stalwart-etc:/etc/stalwart
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/ || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  norest-api:
+    build:
+      context: .
+      dockerfile: docker/norest/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://norest:norest@postgres:5432/norest
+      STALWART_BASE_URL: http://stalwart:8081
+      STALWART_PUBLIC_URL: http://localhost:8081
+      STALWART_ADMIN_USER: admin
+      STALWART_ADMIN_PASSWORD: change-me-development-only
+      STALWART_RECOVERY_ADMIN: admin@norest.test
+      JWT_SECRET: change-me-development-only
+      APP_ENV: development
+      ALLOWED_ORIGINS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+
+  norest-worker:
+    build:
+      context: .
+      dockerfile: docker/norest/Dockerfile
+    environment:
+      DATABASE_URL: postgres://norest:norest@postgres:5432/norest
+      STALWART_BASE_URL: http://stalwart:8081
+      STALWART_PUBLIC_URL: http://localhost:8081
+      STALWART_ADMIN_USER: admin
+      STALWART_ADMIN_PASSWORD: change-me-development-only
+      STALWART_RECOVERY_ADMIN: admin@norest.test
+      JWT_SECRET: change-me-development-only
+      APP_ENV: development
+      ALLOWED_ORIGINS: "*"
+      # Test configuration for stuck job recovery
+      PROVISIONING_WORKERS: 1
+      JOB_LEASE_SECONDS: 5
+      JOB_HEARTBEAT_SECONDS: 2
+      JOB_MAX_ATTEMPTS: 10
+      JOB_MAX_BACKOFF_SECONDS: 30
+    command: ["/norest-worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  stalwart-data:
+  stalwart-etc:
+
+networks:
+  default:
+    name: norest
