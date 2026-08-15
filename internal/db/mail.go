@@ -18,15 +18,14 @@ func NewMailRepository(pool *pgxpool.Pool) *MailRepository {
 }
 
 // GetMailboxByUserID retrieves the primary mailbox for a user.
+// For platform domains, this queries through addresses claimed by the user (works for both user-owned and platform domains).
 func (p *MailRepository) GetMailboxByUserID(ctx context.Context, userID string) (mail.Mailbox, error) {
-	// For Chapter 3, we assume a user has one primary mailbox.
-	// We get the first address associated with a domain they own (or simply join mailboxes to addresses to domains to users).
+	// Query through addresses that are claimed by the user (works for both user-owned and platform domains)
 	query := `
 		SELECT m.id, m.address_id, m.status, m.stalwart_account_id
 		FROM mailboxes m
 		JOIN addresses a ON m.address_id = a.id
-		JOIN domains d ON a.domain_id = d.id
-		WHERE d.user_id = $1
+		WHERE a.claimed_by = $1
 		LIMIT 1
 	`
 	var m mail.Mailbox

@@ -25,6 +25,14 @@ const (
 	StatusDisabled  Status = "disabled"
 )
 
+// OwnershipType represents who owns the domain.
+type OwnershipType string
+
+const (
+	OwnershipTypePlatform OwnershipType = "PLATFORM"
+	OwnershipTypeUser     OwnershipType = "USER"
+)
+
 // VerificationStatus represents the domain ownership verification state.
 type VerificationStatus string
 
@@ -37,16 +45,18 @@ const (
 
 // Domain represents a mail domain registered in the Norest control plane.
 type Domain struct {
-	ID                    uuid.UUID `json:"id"`
-	UserID                uuid.UUID `json:"user_id"`
-	ProductAccountID      uuid.UUID `json:"product_account_id"`
-	Name                  string    `json:"name"`
-	StalwartDomainID      *string   `json:"stalwart_domain_id,omitempty"`
-	Status                string    `json:"status"`
-	VerificationStatus    string    `json:"verification_status"`
-	VerificationTokenHash *string   `json:"-"`
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
+	ID                    uuid.UUID       `json:"id"`
+	UserID                *uuid.UUID      `json:"user_id,omitempty"`
+	ProductAccountID      *uuid.UUID      `json:"product_account_id,omitempty"`
+	Name                  string          `json:"name"`
+	StalwartDomainID      *string         `json:"stalwart_domain_id,omitempty"`
+	Status                string          `json:"status"`
+	VerificationStatus    string          `json:"verification_status"`
+	VerificationTokenHash *string         `json:"-"`
+	OwnershipType         string          `json:"ownership_type"`
+	RegistrationEnabled   bool            `json:"registration_enabled"`
+	CreatedAt             time.Time       `json:"created_at"`
+	UpdatedAt             time.Time       `json:"updated_at"`
 }
 
 // NormalizeDomainName normalizes a domain name for storage and validation.
@@ -72,5 +82,7 @@ func NormalizeDomainName(name string) (string, error) {
 }
 
 type CreateDomainRequest struct {
-	Name string `json:"name"`
+	Name              string `json:"name"`
+	OwnershipType     string `json:"ownership_type,omitempty"`     // "PLATFORM" or "USER"
+	RegistrationEnabled bool  `json:"registration_enabled,omitempty"`
 }

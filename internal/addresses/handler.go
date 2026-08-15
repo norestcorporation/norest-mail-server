@@ -19,6 +19,33 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// CheckAvailability checks if an address is available for reservation.
+func (h *Handler) CheckAvailability(w http.ResponseWriter, r *http.Request) {
+	domainID, err := uuid.Parse(chi.URLParam(r, "domainID"))
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid domain id")
+		return
+	}
+
+	localPart := chi.URLParam(r, "localPart")
+	if localPart == "" {
+		response.Error(w, http.StatusBadRequest, "local part is required")
+		return
+	}
+
+	available, err := h.service.CheckAddressAvailability(r.Context(), domainID, localPart)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "failed to check availability")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]interface{}{
+		"available": available,
+		"local_part": localPart,
+		"domain_id": domainID,
+	})
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {

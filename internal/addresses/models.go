@@ -17,18 +17,24 @@ var (
 type Status string
 
 const (
-	StatusActive   Status = "active"
-	StatusInactive Status = "inactive"
-	StatusReserved Status = "reserved"
+	StatusAvailable Status = "AVAILABLE"
+	StatusReserved   Status = "RESERVED"
+	StatusClaimed    Status = "CLAIMED"
+	StatusBlocked    Status = "BLOCKED"
 )
 
 type Address struct {
-	ID        uuid.UUID `json:"id"`
-	DomainID  uuid.UUID `json:"domain_id"`
-	LocalPart string    `json:"local_part"`
-	Status    Status    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID            uuid.UUID  `json:"id"`
+	DomainID      uuid.UUID  `json:"domain_id"`
+	LocalPart     string     `json:"local_part"`
+	Status        Status     `json:"status"`
+	ReservedBy    *uuid.UUID `json:"reserved_by,omitempty"`
+	ReservedAt    *time.Time `json:"reserved_at,omitempty"`
+	ReservedUntil *time.Time `json:"reserved_until,omitempty"`
+	ClaimedBy     *uuid.UUID `json:"claimed_by,omitempty"`
+	ClaimedAt     *time.Time `json:"claimed_at,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 var localPartRegex = regexp.MustCompile(`^[a-z0-9\.\-\+]+$`)

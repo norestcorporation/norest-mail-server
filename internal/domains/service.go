@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,6 +51,55 @@ func (s *Service) CreateDomain(ctx context.Context, userID uuid.UUID, name strin
 	}
 
 	return d, nil
+}
+
+// CreatePlatformDomain creates a platform-owned domain (admin operation).
+func (s *Service) CreatePlatformDomain(ctx context.Context, name, ownershipType string, registrationEnabled bool) (*Domain, error) {
+	normalized, err := NormalizeDomainName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate ownership type
+	if ownershipType != string(OwnershipTypePlatform) && ownershipType != string(OwnershipTypeUser) {
+		return nil, errors.New("invalid ownership type")
+	}
+
+	d, err := s.repo.CreatePlatformDomainTx(ctx, normalized, ownershipType, registrationEnabled)
+	if err != nil {
+		return nil, err
+	}
+
+	return d, nil
+}
+
+// GetDomainForAddressCheck returns a domain if it's available for address registration.
+func (s *Service) GetDomainForAddressCheck(ctx context.Context, domainID uuid.UUID) (*Domain, error) {
+	domain, err := s.repo.GetByID(ctx, domainID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if domain is active and registration is enabled
+	if domain.Status != string(StatusActive) {
+		return nil, errors.New("domain is not active")
+	}
+
+	if !domain.RegistrationEnabled {
+		return nil, errors.New("domain registration is not enabled")
+	}
+
+	return domain, nil
+}
+
+// GetDomainByName returns a domain by name (for checking existence).
+func (s *Service) GetDomainByName(ctx context.Context, name string) (*Domain, error) {
+	return s.repo.GetByName(ctx, name)
+}
+
+// ListPlatformDomains returns all platform domains available for registration.
+func (s *Service) ListPlatformDomains(ctx context.Context) ([]Domain, error) {
+	return s.repo.ListPlatformDomains(ctx)
 }
 
 func (s *Service) ListDomains(ctx context.Context, userID uuid.UUID) ([]Domain, error) {

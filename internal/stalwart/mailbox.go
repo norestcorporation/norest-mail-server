@@ -28,6 +28,37 @@ type MailboxGetResponse struct {
 	NotFound  []string  `json:"notFound"`
 }
 
+// DiscoverMailboxes retrieves all mailboxes for an account and returns role-to-ID mappings.
+func (c *Client) DiscoverMailboxes(ctx context.Context, accountID string) (map[string]string, error) {
+	response, err := c.MailboxGet(ctx, accountID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("getting mailboxes: %w", err)
+	}
+
+	mappings := make(map[string]string)
+	for _, mailbox := range response.List {
+		if mailbox.Role != "" {
+			mappings[mailbox.Role] = mailbox.ID
+		}
+	}
+	return mappings, nil
+}
+
+// GetMailboxByName retrieves a specific mailbox by name for an account.
+func (c *Client) GetMailboxByName(ctx context.Context, accountID, name string) (*Mailbox, error) {
+	response, err := c.MailboxGet(ctx, accountID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("getting mailboxes: %w", err)
+	}
+
+	for _, mailbox := range response.List {
+		if mailbox.Name == name {
+			return &mailbox, nil
+		}
+	}
+	return nil, fmt.Errorf("mailbox not found: %s", name)
+}
+
 // MailboxGet retrieves mailboxes for the given account using the JMAP Mailbox/get method.
 func (c *Client) MailboxGet(ctx context.Context, accountID string, ids []string) (*MailboxGetResponse, error) {
 	args := map[string]any{

@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Norest Mail",
-    "description": "Complete API collection for Norest Mail backend testing",
+    "name": "Norest Mail - Platform Domains",
+    "description": "Complete API collection for Norest Mail backend testing with platform domain support",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -48,6 +48,16 @@
     {
       "key": "domain_id",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "platform_domain_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "platform_domain_name",
+      "value": "norestmail.com",
       "type": "string"
     },
     {
@@ -109,7 +119,7 @@
               "raw": "http://localhost:8080/health/db",
               "protocol": "http",
               "host": ["localhost"],
-              "port": "8080",
+              "port": 8080,
               "path": ["health", "db"]
             }
           },
@@ -124,7 +134,7 @@
               "raw": "http://localhost:8080/health/stalwart",
               "protocol": "http",
               "host": ["localhost"],
-              "port": "8080",
+              "port": 8080,
               "path": ["health", "stalwart"]
             }
           },
@@ -272,8 +282,9 @@
                   "if (pm.response.code === 200) {",
                   "    var jsonData = pm.response.json();",
                   "    if (jsonData.length > 0) {",
-                  "        pm.environment.set(\"domain_id\", jsonData[0].id);",
-                  "        console.log(\"Platform domain ID saved: \" + jsonData[0].id);",
+                  "        pm.environment.set(\"platform_domain_id\", jsonData[0].id);",
+                  "        pm.environment.set(\"platform_domain_name\", jsonData[0].name);",
+                  "        console.log(\"Platform Domain saved: \" + jsonData[0].name);",
                   "    }",
                   "}"
                 ]
@@ -282,7 +293,7 @@
           ]
         },
         {
-          "name": "Check Domain by Name",
+          "name": "Check Domain Availability",
           "request": {
             "method": "GET",
             "header": [
@@ -292,15 +303,15 @@
               }
             ],
             "url": {
-              "raw": "{{api_base}}/domains/check/norestmail.com",
+              "raw": "{{api_base}}/domains/check/{{platform_domain_name}}",
               "host": ["{{api_base}}"],
-              "path": ["domains", "check", "norestmail.com"]
+              "path": ["domains", "check", "{{platform_domain_name}}"]
             }
           },
           "response": []
         },
         {
-          "name": "Create Domain",
+          "name": "Create Domain (User)",
           "request": {
             "method": "POST",
             "header": [
@@ -315,7 +326,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"example.com\"\n}"
+              "raw": "{\n  \"name\": \"mydomain.com\"\n}"
             },
             "url": {
               "raw": "{{api_base}}/domains",
@@ -340,7 +351,33 @@
           ]
         },
         {
-          "name": "List Domains",
+          "name": "Create Platform Domain (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{norest_access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"newplatform.com\",\n  \"ownership_type\": \"PLATFORM\",\n  \"registration_enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{api_base}}/domains",
+              "host": ["{{api_base}}"],
+              "path": ["domains"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List User Domains",
           "request": {
             "method": "GET",
             "header": [
@@ -435,25 +472,7 @@
       "name": "04 Addresses",
       "item": [
         {
-          "name": "Check Address Availability",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{norest_access_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{api_base}}/domains/{{domain_id}}/addresses/check/testuser",
-              "host": ["{{api_base}}"],
-              "path": ["domains", "{{domain_id}}", "addresses", "check", "testuser"]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Address",
+          "name": "Create Address (Platform Domain)",
           "request": {
             "method": "POST",
             "header": [
@@ -471,9 +490,9 @@
               "raw": "{\n  \"local_part\": \"alice\"\n}"
             },
             "url": {
-              "raw": "{{api_base}}/domains/{{domain_id}}/addresses",
+              "raw": "{{api_base}}/domains/{{platform_domain_id}}/addresses",
               "host": ["{{api_base}}"],
-              "path": ["domains", "{{domain_id}}", "addresses"]
+              "path": ["domains", "{{platform_domain_id}}", "addresses"]
             }
           },
           "response": [],
@@ -493,6 +512,24 @@
           ]
         },
         {
+          "name": "Check Address Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{norest_access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api_base}}/domains/{{platform_domain_id}}/addresses/check/bob",
+              "host": ["{{api_base}}"],
+              "path": ["domains", "{{platform_domain_id}}", "addresses", "check", "bob"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "List Addresses",
           "request": {
             "method": "GET",
@@ -503,9 +540,9 @@
               }
             ],
             "url": {
-              "raw": "{{api_base}}/domains/{{domain_id}}/addresses",
+              "raw": "{{api_base}}/domains/{{platform_domain_id}}/addresses",
               "host": ["{{api_base}}"],
-              "path": ["domains", "{{domain_id}}", "addresses"]
+              "path": ["domains", "{{platform_domain_id}}", "addresses"]
             }
           },
           "response": []
@@ -1015,9 +1052,9 @@
               }
             ],
             "url": {
-              "raw": "{{api_base}}/admin/accounts/{{account_id}}/suspend",
+              "raw": "{{api_base}}/admin/accounts/{{domain_id}}/suspend",
               "host": ["{{api_base}}"],
-              "path": ["admin", "accounts", "{{account_id}}", "suspend"]
+              "path": ["admin", "accounts", "{{domain_id}}", "suspend"]
             }
           },
           "response": []
@@ -1033,9 +1070,9 @@
               }
             ],
             "url": {
-              "raw": "{{api_base}}/admin/accounts/{{account_id}}/reactivate",
+              "raw": "{{api_base}}/admin/accounts/{{domain_id}}/reactivate",
               "host": ["{{api_base}}"],
-              "path": ["admin", "accounts", "{{account_id}}", "reactivate"]
+              "path": ["admin", "accounts", "{{domain_id}}", "reactivate"]
             }
           },
           "response": []

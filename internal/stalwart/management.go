@@ -576,6 +576,73 @@ func (c *Client) FindDomainByName(ctx context.Context, name string) (string, err
 	return "", nil
 }
 
+// FindAccountByName finds an account ID by name in Stalwart by getting all accounts and filtering.
+func (c *Client) FindAccountByName(ctx context.Context, name string) (string, error) {
+	methodCalls := []any{
+		[]any{"x:Account/get", map[string]any{}, "0"},
+	}
+
+	request := map[string]any{
+		"using":       []string{"urn:ietf:params:jmap:core", "urn:stalwart:jmap"},
+		"methodCalls": methodCalls,
+	}
+
+	body, err := json.Marshal(request)
+	if err != nil {
+		return "", fmt.Errorf("marshaling FindAccountByName request: %w", err)
+	}
+
+	url := c.BaseURL + "/jmap"
+	resp, err := c.doRequest(ctx, http.MethodPost, url, bytes.NewReader(body), "application/json")
+	if err != nil {
+		return "", fmt.Errorf("FindAccountByName request: %w", err)
+	}
+
+	data, err := readAndClose(resp)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("FindAccountByName returned status %d: %s", resp.StatusCode, string(data))
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return "", fmt.Errorf("parsing FindAccountByName response: %w", err)
+	}
+
+	if methodResps, ok := result["methodResponses"].([]any); ok {
+		for _, mr := range methodResps {
+			mrArr, ok := mr.([]any)
+			if !ok || len(mrArr) < 2 {
+				continue
+			}
+			if mrArr[0] == "error" {
+				return "", fmt.Errorf("JMAP error: %v", mrArr[1])
+			}
+			if details, ok := mrArr[1].(map[string]any); ok {
+				if list, has := details["list"]; has {
+					if listArr, ok := list.([]any); ok {
+						// Manually filter by name
+						for _, item := range listArr {
+							if account, ok := item.(map[string]any); ok {
+								if accountName, ok := account["name"].(string); ok && accountName == name {
+									if id, ok := account["id"].(string); ok {
+										return id, nil
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return "", nil
+}
+
 // AccountExists checks if an account exists in Stalwart by ID.
 func (c *Client) AccountExists(ctx context.Context, accountID string) (bool, error) {
 	methodCalls := []any{
@@ -700,73 +767,6 @@ func (c *Client) AccountExistsAndMatches(ctx context.Context, accountID, expecte
 	}
 
 	return false, nil
-}
-
-// FindAccountByName finds an account ID by name in Stalwart by getting all accounts and filtering.
-func (c *Client) FindAccountByName(ctx context.Context, name string) (string, error) {
-	methodCalls := []any{
-		[]any{"x:Account/get", map[string]any{}, "0"},
-	}
-
-	request := map[string]any{
-		"using":       []string{"urn:ietf:params:jmap:core", "urn:stalwart:jmap"},
-		"methodCalls": methodCalls,
-	}
-
-	body, err := json.Marshal(request)
-	if err != nil {
-		return "", fmt.Errorf("marshaling FindAccountByName request: %w", err)
-	}
-
-	url := c.BaseURL + "/jmap"
-	resp, err := c.doRequest(ctx, http.MethodPost, url, bytes.NewReader(body), "application/json")
-	if err != nil {
-		return "", fmt.Errorf("FindAccountByName request: %w", err)
-	}
-
-	data, err := readAndClose(resp)
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("FindAccountByName returned status %d: %s", resp.StatusCode, string(data))
-	}
-
-	var result map[string]any
-	if err := json.Unmarshal(data, &result); err != nil {
-		return "", fmt.Errorf("parsing FindAccountByName response: %w", err)
-	}
-
-	if methodResps, ok := result["methodResponses"].([]any); ok {
-		for _, mr := range methodResps {
-			mrArr, ok := mr.([]any)
-			if !ok || len(mrArr) < 2 {
-				continue
-			}
-			if mrArr[0] == "error" {
-				return "", fmt.Errorf("JMAP error: %v", mrArr[1])
-			}
-			if details, ok := mrArr[1].(map[string]any); ok {
-				if list, has := details["list"]; has {
-					if listArr, ok := list.([]any); ok {
-						// Manually filter by name
-						for _, item := range listArr {
-							if account, ok := item.(map[string]any); ok {
-								if accountName, ok := account["name"].(string); ok && accountName == name {
-									if id, ok := account["id"].(string); ok {
-										return id, nil
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return "", nil
 }
 
 // DisableAccount disables a Stalwart account via JMAP x:Account/set.

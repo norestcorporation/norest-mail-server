@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/norest-mail/server/internal/metrics"
 	"github.com/norest-mail/server/internal/stalwart"
@@ -546,7 +545,39 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 		stalwartAccountIDStr = stalwartAccountID.String
 	}
 
-	// 2. Idempotency check: if already has stalwart_account_id, verify it exists AND matches expected info
+	// 2. Ensure Stalwart domain exists before creating account
+	if stalwartDomainIDStr == "" {
+		slog.Info("Stalwart domain ID missing, attempting to ensure domain exists",
+			"job_id", job.ID,
+			"domain_name", domainName,
+		)
+		
+		// Try to find existing domain by name
+		existingStalwartID, err := w.stalwartClient.FindDomainByName(ctx, domainName)
+		if err == nil && existingStalwartID != "" {
+			stalwartDomainIDStr = existingStalwartID
+			// Update domain record
+			_, err = w.pool.Exec(ctx, "UPDATE domains SET stalwart_domain_id = $1 WHERE name = $2", stalwartDomainIDStr, domainName)
+			if err != nil {
+				return fmt.Errorf("failed to update domain with existing Stalwart ID: %w", err)
+			}
+			slog.Info("Found existing Stalwart domain", "domain_name", domainName, "stalwart_id", stalwartDomainIDStr)
+		} else {
+			// Create domain
+			stalwartDomainIDStr, err = w.stalwartClient.CreateDomain(ctx, domainName)
+			if err != nil {
+				return fmt.Errorf("failed to create Stalwart domain: %w", err)
+			}
+			// Update domain record
+			_, err = w.pool.Exec(ctx, "UPDATE domains SET stalwart_domain_id = $1 WHERE name = $2", stalwartDomainIDStr, domainName)
+			if err != nil {
+				return fmt.Errorf("failed to update domain with new Stalwart ID: %w", err)
+			}
+			slog.Info("Created new Stalwart domain", "domain_name", domainName, "stalwart_id", stalwartDomainIDStr)
+		}
+	}
+
+	// 3. Idempotency check: if already has stalwart_account_id and is fully active, skip
 	if stalwartAccountIDStr != "" && mailboxStatus == "active" {
 		// Verify account still exists in Stalwart AND has the correct name/domain
 		exists, err := w.stalwartClient.AccountExistsAndMatches(ctx, stalwartAccountIDStr, localPart, stalwartDomainIDStr)
@@ -568,7 +599,7 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 		)
 	}
 
-	// 2.5. Check if account already exists in Stalwart by name (prevent duplicate creation)
+	// 4. Check if account already exists in Stalwart by name (prevent duplicate creation)
 	existingStalwartAccountID, err := w.stalwartClient.FindAccountByName(ctx, accountName)
 	if err == nil && existingStalwartAccountID != "" {
 		slog.Info("account already exists in Stalwart by name, using existing ID",
@@ -577,24 +608,13 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 			"existing_stalwart_account_id", existingStalwartAccountID,
 		)
 		stalwartAccountIDStr = existingStalwartAccountID
-		// Update the mailbox record with the existing Stalwart account ID
-		_, err = w.pool.Exec(ctx, "UPDATE mailboxes SET stalwart_account_id = $1 WHERE id = $2", stalwartAccountIDStr, job.ResourceID)
-		if err != nil {
-			return fmt.Errorf("failed to update mailbox with existing Stalwart account ID: %w", err)
-		}
-		// Mark job as successful
-		_, err = w.pool.Exec(ctx, "UPDATE provisioning_jobs SET status = 'SUCCEEDED' WHERE id = $1", job.ID)
-		if err != nil {
-			return fmt.Errorf("failed to update job status: %w", err)
-		}
-		return nil
 	} else {
-		// 3. Generate secure random password
+		// 5. Generate secure random password
 		b := make([]byte, 32)
 		rand.Read(b)
 		password := base64.RawURLEncoding.EncodeToString(b)
 		
-		// 4. Create account in Stalwart
+		// 6. Create account in Stalwart
 		stalwartAccountIDStr, err = w.stalwartClient.CreateAccount(ctx, localPart, stalwartDomainIDStr, password, accountName)
 		if err != nil {
 			return fmt.Errorf("failed to create account in Stalwart: %w", err)
@@ -604,7 +624,7 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 		}
 	}
 
-	// 4. Update Norest models
+	// 7. Update mailbox to provisioning state with Stalwart account ID
 	txCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	
@@ -616,53 +636,163 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 
 	_, err = tx.Exec(txCtx,
 		`UPDATE mailboxes SET status = $1, stalwart_account_id = $2 WHERE id = $3`,
-		"active", stalwartAccountIDStr, job.ResourceID,
+		"provisioning", stalwartAccountIDStr, job.ResourceID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update mailbox to provisioning: %w", err)
 	}
 
+	// Update address to CLAIMED (preserve the claimed_by from reservation)
 	_, err = tx.Exec(txCtx,
-		`UPDATE addresses SET status = $1 WHERE id = (SELECT address_id FROM mailboxes WHERE id = $2)`,
+		`UPDATE addresses SET status = $1, claimed_at = NOW(), claimed_by = COALESCE(claimed_by, reserved_by), reserved_by = NULL, reserved_at = NULL, reserved_until = NULL WHERE id = (SELECT address_id FROM mailboxes WHERE id = $2)`,
+		"CLAIMED", job.ResourceID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update address to claimed: %w", err)
+	}
+
+	if err := tx.Commit(txCtx); err != nil {
+		return fmt.Errorf("failed to commit provisioning state: %w", err)
+	}
+
+	// 8. Update job checkpoint for progress tracking
+	if err := w.repo.UpdateCheckpoint(ctx, job.ID); err != nil {
+		slog.Warn("failed to update job checkpoint", "error", err, "job_id", job.ID)
+	}
+
+	// 9. Discover and persist mailbox mappings
+	slog.Info("discovering mailbox mappings", "job_id", job.ID, "account_id", stalwartAccountIDStr)
+	mailboxMappings, err := w.stalwartClient.DiscoverMailboxes(ctx, stalwartAccountIDStr)
+	if err != nil {
+		return fmt.Errorf("failed to discover mailboxes: %w", err)
+	}
+
+	// Persist mailbox mappings
+	txCtx, cancel = context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	
+	tx, err = w.pool.Begin(txCtx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction for mailbox mappings: %w", err)
+	}
+	defer tx.Rollback(txCtx)
+
+	// Clear existing mappings for this mailbox
+	_, err = tx.Exec(txCtx, "DELETE FROM mailbox_mappings WHERE mailbox_id = $1", job.ResourceID)
+	if err != nil {
+		return fmt.Errorf("failed to clear existing mailbox mappings: %w", err)
+	}
+
+	// Insert new mappings
+	for role, stalwartMailboxID := range mailboxMappings {
+		_, err = tx.Exec(txCtx,
+			`INSERT INTO mailbox_mappings (mailbox_id, role, stalwart_mailbox_id) VALUES ($1, $2, $3)`,
+			job.ResourceID, role, stalwartMailboxID,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to insert mailbox mapping for role %s: %w", role, err)
+		}
+	}
+
+	if err := tx.Commit(txCtx); err != nil {
+		return fmt.Errorf("failed to commit mailbox mappings: %w", err)
+	}
+
+	slog.Info("mailbox mappings persisted", "job_id", job.ID, "mappings_count", len(mailboxMappings))
+
+	// 10. Update job checkpoint
+	if err := w.repo.UpdateCheckpoint(ctx, job.ID); err != nil {
+		slog.Warn("failed to update job checkpoint", "error", err, "job_id", job.ID)
+	}
+
+	// 11. Perform initial JMAP synchronization
+	slog.Info("performing initial JMAP synchronization", "job_id", job.ID, "account_id", stalwartAccountIDStr)
+	
+	// Update mailbox status to syncing
+	_, err = w.pool.Exec(ctx,
+		`UPDATE mailboxes SET status = $1 WHERE id = $2`,
+		"syncing", job.ResourceID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update mailbox to syncing: %w", err)
+	}
+
+	// Get JMAP session to retrieve initial state
+	jmapSession, err := w.stalwartClient.GetJMAPSession(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get JMAP session for initial sync: %w", err)
+	}
+
+	// The JMAP state represents the initial synchronization checkpoint
+	initialState := jmapSession.State
+
+	// 12. Persist initial synchronization checkpoint
+	txCtx, cancel = context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	
+	tx, err = w.pool.Begin(txCtx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction for checkpoint: %w", err)
+	}
+	defer tx.Rollback(txCtx)
+
+	_, err = tx.Exec(txCtx,
+		`UPDATE mailboxes SET jmap_state = $1, initial_sync_checkpoint = $2, initial_sync_completed_at = NOW() WHERE id = $3`,
+		initialState, initialState, job.ResourceID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to persist initial sync checkpoint: %w", err)
+	}
+
+	// 13. NOW set mailbox to active - only after complete initialization
+	_, err = tx.Exec(txCtx,
+		`UPDATE mailboxes SET status = $1 WHERE id = $2`,
 		"active", job.ResourceID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update mailbox to active: %w", err)
 	}
 
-	// Get user_id for this mailbox to update user status
-	var userID uuid.UUID
-	err = tx.QueryRow(txCtx,
-		`SELECT d.user_id FROM domains d 
-		 JOIN addresses a ON d.id = a.domain_id 
+	if err := tx.Commit(txCtx); err != nil {
+		return fmt.Errorf("failed to commit activation: %w", err)
+	}
+
+	slog.Info("mailbox activated after complete initialization", 
+		"job_id", job.ID, 
+		"mailbox_id", job.ResourceID,
+		"jmap_state", initialState,
+	)
+
+	// 14. Update user status to active when first mailbox is successfully provisioned
+	var userID sql.NullString
+	err = w.pool.QueryRow(ctx,
+		`SELECT a.claimed_by FROM addresses a 
 		 JOIN mailboxes m ON a.id = m.address_id 
 		 WHERE m.id = $1`,
 		job.ResourceID,
 	).Scan(&userID)
 	if err != nil {
 		slog.Warn("failed to get user_id for status update", "error", err, "mailbox_id", job.ResourceID)
-		// Continue with transaction - user status update is not critical
-		return tx.Commit(txCtx)
+		return nil // User status update is not critical for activation
 	}
 
-	// Update user status to active when first mailbox is successfully provisioned
-	result, err := tx.Exec(txCtx,
-		`UPDATE users SET status = 'active', updated_at = NOW() 
-		 WHERE id = $1 AND status = 'pending'`,
-		userID,
-	)
-	if err != nil {
-		slog.Warn("failed to update user status to active", "error", err, "user_id", userID)
-		// Continue with transaction - user status update is not critical
-		return tx.Commit(txCtx)
+	if userID.Valid {
+		result, err := w.pool.Exec(ctx,
+			`UPDATE users SET status = 'active', updated_at = NOW() 
+			 WHERE id = $1 AND status = 'pending'`,
+			userID.String,
+		)
+		if err != nil {
+			slog.Warn("failed to update user status to active", "error", err, "user_id", userID.String)
+		} else {
+			rowsAffected := result.RowsAffected()
+			if rowsAffected > 0 {
+				slog.Info("user status updated to active", "user_id", userID.String, "mailbox_id", job.ResourceID)
+			}
+		}
 	}
 
-	rowsAffected := result.RowsAffected()
-	if rowsAffected > 0 {
-		slog.Info("user status updated to active", "user_id", userID, "mailbox_id", job.ResourceID)
-	}
-
-	return tx.Commit(txCtx)
+	return nil
 }
 
 func (w *Worker) processAccountQuotaSync(ctx context.Context, job Job) error {

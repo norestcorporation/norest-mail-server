@@ -35,14 +35,14 @@ func (r *Repository) ClaimJob(ctx context.Context, workerID string, leaseDuratio
 		     updated_at = NOW()
 		 WHERE id IN (
 			 SELECT id FROM provisioning_jobs
-			 WHERE status IN ($3, $4) AND next_attempt_at <= NOW()
+			 WHERE status IN ($3, $4, $5) AND next_attempt_at <= NOW()
 			 ORDER BY next_attempt_at ASC
 			 LIMIT 1
 			 FOR UPDATE SKIP LOCKED
 		 )
-		 RETURNING id, type, resource_id, status, attempts, next_attempt_at, last_error, claimed_at, heartbeat_at, worker_id, created_at, updated_at`,
-		StatusProcessing, workerID, StatusPending, StatusRetryWait,
-	).Scan(&j.ID, &j.Type, &j.ResourceID, &j.Status, &j.Attempts, &j.NextAttemptAt, &j.LastError, &j.ClaimedAt, &j.HeartbeatAt, &j.WorkerID, &j.CreatedAt, &j.UpdatedAt)
+		 RETURNING id, type, resource_id, status, attempts, next_attempt_at, last_error, claimed_at, heartbeat_at, last_checkpoint_at, worker_id, created_at, updated_at`,
+		StatusProcessing, workerID, StatusPending, StatusRetryWait, StatusUnknown,
+	).Scan(&j.ID, &j.Type, &j.ResourceID, &j.Status, &j.Attempts, &j.NextAttemptAt, &j.LastError, &j.ClaimedAt, &j.HeartbeatAt, &j.LastCheckpointAt, &j.WorkerID, &j.CreatedAt, &j.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			// No jobs available to claim
@@ -184,13 +184,89 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Job, error) {
 	
 	var j Job
 	err := r.pool.QueryRow(queryCtx,
-		`SELECT id, type, resource_id, status, attempts, next_attempt_at, last_error, claimed_at, heartbeat_at, worker_id, created_at, updated_at
+		`SELECT id, type, resource_id, status, attempts, next_attempt_at, last_error, claimed_at, heartbeat_at, last_checkpoint_at, worker_id, created_at, updated_at
 		 FROM provisioning_jobs WHERE id = $1`, id,
-	).Scan(&j.ID, &j.Type, &j.ResourceID, &j.Status, &j.Attempts, &j.NextAttemptAt, &j.LastError, &j.ClaimedAt, &j.HeartbeatAt, &j.WorkerID, &j.CreatedAt, &j.UpdatedAt)
+	).Scan(&j.ID, &j.Type, &j.ResourceID, &j.Status, &j.Attempts, &j.NextAttemptAt, &j.LastError, &j.ClaimedAt, &j.HeartbeatAt, &j.LastCheckpointAt, &j.WorkerID, &j.CreatedAt, &j.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("getting job by id: %w", err)
 	}
 	return &j, nil
+}
+
+// MarkUnknown marks a job as UNKNOWN (uncertain state due to timeout/ambiguity).
+func (r *Repository) MarkUnknown(ctx context.Context, id uuid.UUID, errMsg string) error {
+	queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	
+	nextAttempt := time.Now().Add(5 * time.Minute) // Reconcile after 5 minutes
+	
+	_, err := r.pool.Exec(queryCtx,
+		`UPDATE provisioning_jobs
+		 SET status = $1,
+		     next_attempt_at = $2,
+		     last_error = $3,
+		     worker_id = NULL,
+		     claimed_at = NULL,
+		     heartbeat_at = NULL,
+		     updated_at = NOW()
+		 WHERE id = $4`,
+		StatusUnknown, nextAttempt, errMsg, id,
+	)
+	return err
+}
+
+// MarkReconciling marks a job as RECONCILING for state reconciliation.
+func (r *Repository) MarkReconciling(ctx context.Context, id uuid.UUID) error {
+	queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	
+	_, err := r.pool.Exec(queryCtx,
+		`UPDATE provisioning_jobs
+		 SET status = $1,
+		     worker_id = NULL,
+		     claimed_at = NULL,
+		     heartbeat_at = NULL,
+		     updated_at = NOW()
+		 WHERE id = $2`,
+		StatusReconciling, id,
+	)
+	return err
+}
+
+// MarkRepairing marks a job as REPAIRING for corrective action.
+func (r *Repository) MarkRepairing(ctx context.Context, id uuid.UUID, errMsg string) error {
+	queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	
+	nextAttempt := time.Now().Add(10 * time.Minute) // Repair after 10 minutes
+	
+	_, err := r.pool.Exec(queryCtx,
+		`UPDATE provisioning_jobs
+		 SET status = $1,
+		     next_attempt_at = $2,
+		     last_error = $3,
+		     worker_id = NULL,
+		     claimed_at = NULL,
+		     heartbeat_at = NULL,
+		     updated_at = NOW()
+		 WHERE id = $4`,
+		StatusRepairing, nextAttempt, errMsg, id,
+	)
+	return err
+}
+
+// UpdateCheckpoint updates the last checkpoint timestamp for a job.
+func (r *Repository) UpdateCheckpoint(ctx context.Context, id uuid.UUID) error {
+	queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	
+	_, err := r.pool.Exec(queryCtx,
+		`UPDATE provisioning_jobs
+		 SET last_checkpoint_at = NOW(), updated_at = NOW()
+		 WHERE id = $1::uuid AND status = $2`,
+		id, StatusProcessing,
+	)
+	return err
 }
 
 // GetBacklogStats returns statistics about the provisioning job backlog.

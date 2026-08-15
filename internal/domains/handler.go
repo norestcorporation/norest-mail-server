@@ -19,6 +19,57 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// ListPlatformDomains returns all platform domains available for registration.
+func (h *Handler) ListPlatformDomains(w http.ResponseWriter, r *http.Request) {
+	domains, err := h.service.ListPlatformDomains(r.Context())
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "failed to list platform domains")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, domains)
+}
+
+// CheckDomainByName checks if a domain exists and is available for registration.
+func (h *Handler) CheckDomainByName(w http.ResponseWriter, r *http.Request) {
+	domainName := chi.URLParam(r, "name")
+	if domainName == "" {
+		response.Error(w, http.StatusBadRequest, "domain name is required")
+		return
+	}
+
+	domain, err := h.service.GetDomainByName(r.Context(), domainName)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "domain not found")
+		return
+	}
+
+	// Check if domain is available for registration
+	if domain.Status != string(StatusActive) {
+		response.JSON(w, http.StatusOK, map[string]interface{}{
+			"exists": true,
+			"available": false,
+			"reason": "domain is not active",
+		})
+		return
+	}
+
+	if !domain.RegistrationEnabled {
+		response.JSON(w, http.StatusOK, map[string]interface{}{
+			"exists": true,
+			"available": false,
+			"reason": "registration is not enabled for this domain",
+		})
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]interface{}{
+		"exists": true,
+		"available": true,
+		"domain": domain,
+	})
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.UserIDFromContext(r.Context())
 	if !ok {
@@ -32,6 +83,35 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if this is a platform domain creation (admin only)
+	if req.OwnershipType == string(OwnershipTypePlatform) {
+		// Verify admin access
+		isAdmin, ok := auth.IsAdminFromContext(r.Context())
+		if !ok || !isAdmin {
+			response.Error(w, http.StatusForbidden, "admin access required for platform domains")
+			return
+		}
+
+		domain, err := h.service.CreatePlatformDomain(r.Context(), req.Name, req.OwnershipType, req.RegistrationEnabled)
+		if err != nil {
+			if err == ErrInvalidDomain {
+				response.Error(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			if err == ErrDomainExists {
+				response.Error(w, http.StatusConflict, err.Error())
+				return
+			}
+			log.Printf("CreatePlatformDomain error: %v", err)
+			response.Error(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		response.JSON(w, http.StatusCreated, domain)
+		return
+	}
+
+	// Regular user domain creation
 	domain, err := h.service.CreateDomain(r.Context(), userID, req.Name)
 	if err != nil {
 		if err == ErrInvalidDomain {

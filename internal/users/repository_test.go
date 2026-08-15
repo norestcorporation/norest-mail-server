@@ -31,7 +31,6 @@ func TestUpdateStatus_Integration(t *testing.T) {
 
 	// Create a test user
 	testUserID := uuid.New()
-	testEmail := "status-test@example.com"
 	
 	// First, ensure we can update a user (this assumes a user exists)
 	// In a real test, we would create the user first

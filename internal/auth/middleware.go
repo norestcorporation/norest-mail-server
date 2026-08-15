@@ -13,6 +13,7 @@ type contextKey string
 
 const userContextKey contextKey = "userID"
 const userIDStringKey contextKey = "user_id"
+const adminContextKey contextKey = "isAdmin"
 
 // RequireAuth middleware verifies the JWT and attaches the user ID to the context.
 func RequireAuth(service *Service) func(http.Handler) http.Handler {
@@ -39,6 +40,7 @@ func RequireAuth(service *Service) func(http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), userContextKey, userID)
 			ctx = context.WithValue(ctx, userIDStringKey, userID.String())
+			ctx = context.WithValue(ctx, adminContextKey, false)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -80,6 +82,7 @@ func RequireAdmin(service *Service) func(http.Handler) http.Handler {
 
 			ctx := context.WithValue(r.Context(), userContextKey, userID)
 			ctx = context.WithValue(ctx, userIDStringKey, userID.String())
+			ctx = context.WithValue(ctx, adminContextKey, true)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -89,4 +92,10 @@ func RequireAdmin(service *Service) func(http.Handler) http.Handler {
 func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	userID, ok := ctx.Value(userContextKey).(uuid.UUID)
 	return userID, ok
+}
+
+// IsAdminFromContext retrieves the admin status from the request context.
+func IsAdminFromContext(ctx context.Context) (bool, bool) {
+	isAdmin, ok := ctx.Value(adminContextKey).(bool)
+	return isAdmin, ok
 }

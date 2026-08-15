@@ -96,17 +96,20 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 
 			// Domains
 			r.Route("/domains", func(r chi.Router) {
+				r.Get("/platform", domainsHandler.ListPlatformDomains)
+				r.Get("/check/{name}", domainsHandler.CheckDomainByName)
 				r.Post("/", domainsHandler.Create)
 				r.Get("/", domainsHandler.List)
-				r.Get("/{id}", domainsHandler.Get)
-				r.Delete("/{id}", domainsHandler.Delete)
 				r.Post("/{id}/verification/start", domainsHandler.StartVerification)
 				r.Get("/{id}/verification", domainsHandler.GetVerification)
+				r.Get("/{id}", domainsHandler.Get)
+				r.Delete("/{id}", domainsHandler.Delete)
 
 				// Addresses
 				r.Route("/{domainID}/addresses", func(r chi.Router) {
 					r.Post("/", addressesHandler.Create)
 					r.Get("/", addressesHandler.List)
+					r.Get("/check/{localPart}", addressesHandler.CheckAvailability)
 				})
 			})
 

@@ -37,11 +37,11 @@ func (r *Repository) createDomainTxWithRetry(ctx context.Context, userID, produc
 
 	var d Domain
 	err = tx.QueryRow(txCtx,
-		`INSERT INTO domains (user_id, product_account_id, name, status, verification_status)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, created_at, updated_at`,
-		userID, productAccountID, name, StatusPending, VerificationPending,
-	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.CreatedAt, &d.UpdatedAt)
+		`INSERT INTO domains (user_id, product_account_id, name, status, verification_status, ownership_type, registration_enabled)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		 RETURNING id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, ownership_type, registration_enabled, created_at, updated_at`,
+		userID, productAccountID, name, StatusPending, VerificationPending, OwnershipTypeUser, false,
+	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_domains_name_unique\" (SQLSTATE 23505)" {
@@ -79,7 +79,7 @@ func (r *Repository) createDomainTxWithRetry(ctx context.Context, userID, produc
 
 func (r *Repository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Domain, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, created_at, updated_at
+		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, ownership_type, registration_enabled, created_at, updated_at
 		 FROM domains WHERE user_id = $1`, userID,
 	)
 	if err != nil {
@@ -90,7 +90,7 @@ func (r *Repository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Doma
 	var domains []Domain
 	for rows.Next() {
 		var d Domain
-		if err := rows.Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
 		domains = append(domains, d)
@@ -110,9 +110,9 @@ func (r *Repository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Doma
 func (r *Repository) GetByIDAndUser(ctx context.Context, id, userID uuid.UUID) (*Domain, error) {
 	var d Domain
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, created_at, updated_at
+		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, ownership_type, registration_enabled, created_at, updated_at
 		 FROM domains WHERE id = $1 AND user_id = $2`, id, userID,
-	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.CreatedAt, &d.UpdatedAt)
+	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrDomainNotFound
@@ -189,4 +189,112 @@ func (r *Repository) CreateVerificationJob(ctx context.Context, domainID uuid.UU
 		"DOMAIN_VERIFY", domainID, "PENDING",
 	)
 	return err
+}
+
+// GetByID returns a domain by ID without user ownership check.
+func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Domain, error) {
+	var d Domain
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, ownership_type, registration_enabled, created_at, updated_at
+		 FROM domains WHERE id = $1`, id,
+	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrDomainNotFound
+		}
+		return nil, err
+	}
+	return &d, nil
+}
+
+// GetByName returns a domain by name without user ownership check.
+func (r *Repository) GetByName(ctx context.Context, name string) (*Domain, error) {
+	var d Domain
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, ownership_type, registration_enabled, created_at, updated_at
+		 FROM domains WHERE lower(name) = lower($1)`, name,
+	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrDomainNotFound
+		}
+		return nil, err
+	}
+	return &d, nil
+}
+
+// ListPlatformDomains returns all platform-owned domains that are active and have registration enabled.
+func (r *Repository) ListPlatformDomains(ctx context.Context) ([]Domain, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, ownership_type, registration_enabled, created_at, updated_at
+		 FROM domains 
+		 WHERE ownership_type = 'PLATFORM' 
+		 AND LOWER(status) = 'active' 
+		 AND registration_enabled = true`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var domains []Domain
+	for rows.Next() {
+		var d Domain
+		if err := rows.Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		domains = append(domains, d)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if domains == nil {
+		domains = []Domain{}
+	}
+	return domains, nil
+}
+
+// CreatePlatformDomain creates a platform-owned domain (admin operation).
+func (r *Repository) CreatePlatformDomainTx(ctx context.Context, name, ownershipType string, registrationEnabled bool) (*Domain, error) {
+	txCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	
+	tx, err := r.pool.Begin(txCtx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(txCtx)
+
+	var d Domain
+	err = tx.QueryRow(txCtx,
+		`INSERT INTO domains (user_id, product_account_id, name, status, verification_status, ownership_type, registration_enabled)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		 RETURNING id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, ownership_type, registration_enabled, created_at, updated_at`,
+		nil, nil, name, StatusActive, VerificationVerified, ownershipType, registrationEnabled,
+	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
+
+	if err != nil {
+		if err != nil && string(err.Error()) != "" {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	// Insert provisioning job for platform domain
+	_, err = tx.Exec(txCtx,
+		`INSERT INTO provisioning_jobs (type, resource_id, status)
+		 VALUES ($1, $2, $3)`,
+		"DOMAIN_CREATE", d.ID, "PENDING",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(txCtx); err != nil {
+		return nil, err
+	}
+
+	return &d, nil
 }
