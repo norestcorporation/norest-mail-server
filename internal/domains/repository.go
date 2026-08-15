@@ -93,6 +93,8 @@ func (r *Repository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]Doma
 		if err := rows.Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
+		// VerificationToken is not stored in DB, it's only set temporarily
+		d.VerificationToken = nil
 		domains = append(domains, d)
 	}
 
@@ -119,6 +121,8 @@ func (r *Repository) GetByIDAndUser(ctx context.Context, id, userID uuid.UUID) (
 		}
 		return nil, err
 	}
+	// VerificationToken is not stored in DB, it's only set temporarily
+	d.VerificationToken = nil
 	return &d, nil
 }
 
@@ -204,6 +208,8 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Domain, error)
 		}
 		return nil, err
 	}
+	// VerificationToken is not stored in DB, it's only set temporarily
+	d.VerificationToken = nil
 	return &d, nil
 }
 
@@ -220,6 +226,8 @@ func (r *Repository) GetByName(ctx context.Context, name string) (*Domain, error
 		}
 		return nil, err
 	}
+	// VerificationToken is not stored in DB, it's only set temporarily
+	d.VerificationToken = nil
 	return &d, nil
 }
 
@@ -243,6 +251,8 @@ func (r *Repository) ListPlatformDomains(ctx context.Context) ([]Domain, error) 
 		if err := rows.Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, err
 		}
+		// VerificationToken is not stored in DB, it's only set temporarily
+		d.VerificationToken = nil
 		domains = append(domains, d)
 	}
 
@@ -271,9 +281,9 @@ func (r *Repository) CreatePlatformDomainTx(ctx context.Context, name, ownership
 	err = tx.QueryRow(txCtx,
 		`INSERT INTO domains (user_id, product_account_id, name, status, verification_status, ownership_type, registration_enabled)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, ownership_type, registration_enabled, created_at, updated_at`,
+		 RETURNING id, user_id, product_account_id, name, stalwart_domain_id, status, verification_status, verification_token_hash, ownership_type, registration_enabled, created_at, updated_at`,
 		nil, nil, name, StatusActive, VerificationVerified, ownershipType, registrationEnabled,
-	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
+	).Scan(&d.ID, &d.UserID, &d.ProductAccountID, &d.Name, &d.StalwartDomainID, &d.Status, &d.VerificationStatus, &d.VerificationTokenHash, &d.OwnershipType, &d.RegistrationEnabled, &d.CreatedAt, &d.UpdatedAt)
 
 	if err != nil {
 		if err != nil && string(err.Error()) != "" {

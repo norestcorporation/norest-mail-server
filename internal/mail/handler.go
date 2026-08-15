@@ -28,6 +28,11 @@ func (h *Handler) CreateSession(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.service.CreateMailSession(r.Context(), userID.String(), h.stalwartHost)
 	if err != nil {
+		// Provide specific error messages for different failure scenarios
+		if err.Error() == "mailbox is not active" || err.Error() == "mailbox not fully provisioned in stalwart" {
+			response.Error(w, http.StatusServiceUnavailable, "mailbox not ready - please wait for provisioning to complete")
+			return
+		}
 		// Do not expose internal details about stalwart in production, but we return a generic error
 		response.Error(w, http.StatusInternalServerError, "failed to create mail session")
 		return
@@ -57,4 +62,20 @@ func (h *Handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) GetProvisioningStatus(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	status, err := h.service.GetProvisioningStatus(r.Context(), userID.String())
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "failed to get provisioning status")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, status)
 }

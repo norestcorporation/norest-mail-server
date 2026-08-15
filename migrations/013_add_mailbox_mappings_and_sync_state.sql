@@ -1,4 +1,4 @@
--- 013_mailbox_mappings_and_sync.sql
+-- 013_add_mailbox_mappings_and_sync_state.sql
 -- Add mailbox mappings and JMAP synchronization state tracking
 -- This enables proper initial synchronization before account activation
 

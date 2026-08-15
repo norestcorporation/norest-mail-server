@@ -1,0 +1,36 @@
+docker compose down
+docker compose down -v
+docker images | grep -E "norest|server"
+docker rmi server-api:latest server-migrate:latest server-norest-api:latest server-norest-worker-1:latest server-norest-worker-2:latest server-norest-worker-3:latest server-norest-worker:latest server-worker:latest
+docker ps -a
+docker volume ls
+docker compose build
+docker compose up -d
+docker compose ps
+docker compose exec postgres pg_isready -U norest -d norest
+
+cd "/home/ripun/Norest Mail/server"
+for migration in migrations/*.sql; do
+    echo "Applying $(basename "$migration")..."
+    docker compose exec -T postgres psql -U norest -d norest -f /dev/stdin < "$migration"
+done
+
+curl -s -u admin:change-me-development-only -X POST http://localhost:8081/jmap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"],
+    "methodCalls": [
+      ["x:Bootstrap/set", {
+        "accountId": "admin",
+        "update": {
+          "singleton": {
+            "serverHostname": "localhost",
+            "defaultDomain": "localhost"
+          }
+        }
+      }, "0"]
+    ]
+  }'
+
+
+docker compose restart stalwart

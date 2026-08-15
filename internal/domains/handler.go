@@ -240,20 +240,22 @@ func (h *Handler) GetVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Just return the instructions
-	res := map[string]string{
+	// If the domain has a temporary plaintext token (from verification start), use it
+	// Otherwise, indicate the user needs to restart verification
+	dnsValue := "norest-verification=TOKEN_FROM_START_VERIFICATION"
+	message := "If you lost your verification token, restart verification to get a new one"
+	
+	if domain.VerificationToken != nil && *domain.VerificationToken != "" {
+		dnsValue = "norest-verification=" + *domain.VerificationToken
+		message = "Configure this TXT record in your DNS"
+	}
+	
+	res := map[string]interface{}{
 		"type":  "TXT",
 		"name":  "_norest-verification." + domain.Name,
-		"value": "norest-verification=...", // We don't expose the actual token here for security if not needed,
-		// wait, the client DOES need the token to set it! Let's expose it if it's pending/verifying.
-		// Actually, we hash it in DB? Oh wait.
-		// Chapter 4 says: "Store: verification_token_hash rather than unnecessarily storing a reusable plaintext secret."
-		// If we hash it, we MUST return it in CreateDomain or StartVerification to the user!
-		// Wait, if we return it in CreateDomain once, the user has to save it. If they lose it, they have to re-start verification.
-		// I'll just skip the plaintext return for now and let the worker check it. Oh wait, how will the user know what to set in DNS?
-		// "The client should be able to retrieve instructions such as: TXT norest-verification=<random-token>"
-		// If we only store the hash, how can `GET /verification` return the token?
-		// We could generate a new token every time they start verification!
+		"value": dnsValue,
+		"status": domain.VerificationStatus,
+		"message": message,
 	}
 
 	response.JSON(w, http.StatusOK, res)

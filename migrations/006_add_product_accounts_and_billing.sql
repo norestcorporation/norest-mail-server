@@ -1,5 +1,5 @@
--- 006_chapter4_product_plane.sql
--- Chapter 4: Product Control Plane, Billing, and Quotas
+-- 006_add_product_accounts_and_billing.sql
+-- Product Control Plane, Billing, and Quotas
 
 -- 1. Product Accounts
 CREATE TABLE product_accounts (

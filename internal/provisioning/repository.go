@@ -310,3 +310,10 @@ func (r *Repository) GetBacklogStats(ctx context.Context) (pending, processing, 
 
 	return pending, processing, retry, failed, oldestPending, nil
 }
+
+// CleanExpiredReservations cleans up expired address reservations using the database function.
+func (r *Repository) CleanExpiredReservations(ctx context.Context) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `SELECT clean_expired_reservations()`).Scan(&count)
+	return count, err
+}

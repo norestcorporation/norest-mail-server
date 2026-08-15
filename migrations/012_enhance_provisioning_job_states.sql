@@ -1,4 +1,4 @@
--- 012_enhanced_provisioning_states.sql
+-- 012_enhance_provisioning_job_states.sql
 -- Enhanced provisioning job states for better error handling and reconciliation
 
 -- Update provisioning jobs table to support enhanced states

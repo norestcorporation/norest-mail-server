@@ -1,4 +1,4 @@
--- 003_addresses.sql
+-- 003_create_addresses_table.sql
 -- Email addresses registered in the Norest control plane
 
 CREATE TABLE addresses (

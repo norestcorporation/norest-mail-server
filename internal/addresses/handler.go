@@ -87,11 +87,115 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			response.Error(w, http.StatusForbidden, err.Error())
 			return
 		}
+		if err.Error() == "domain does not belong to the user" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if err.Error() == "domain must be verified before registering addresses" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	response.JSON(w, http.StatusCreated, address)
+}
+
+// Reserve reserves an address without creating the mailbox (for signup flow).
+func (h *Handler) Reserve(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	domainID, err := uuid.Parse(chi.URLParam(r, "domainID"))
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid domain id")
+		return
+	}
+
+	var req CreateAddressRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	address, err := h.service.ReserveAddress(r.Context(), userID, domainID, req.LocalPart)
+	if err != nil {
+		if err == ErrInvalidLocalPart {
+			response.Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err == ErrAddressExists {
+			response.Error(w, http.StatusConflict, err.Error())
+			return
+		}
+		if err == domains.ErrDomainNotFound {
+			response.Error(w, http.StatusNotFound, "domain not found")
+			return
+		}
+		if err.Error() == "quota exceeded" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if err.Error() == "account suspended" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if err.Error() == "domain does not belong to the user" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if err.Error() == "domain must be verified before registering addresses" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusCreated, address)
+}
+
+// Claim claims a reserved address and creates the mailbox.
+func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	addressID, err := uuid.Parse(chi.URLParam(r, "addressID"))
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid address id")
+		return
+	}
+
+	err = h.service.ClaimAddress(r.Context(), addressID, userID)
+	if err != nil {
+		if err.Error() == "address not found" {
+			response.Error(w, http.StatusNotFound, "address not found")
+			return
+		}
+		if err.Error() == "address already claimed" {
+			response.Error(w, http.StatusConflict, "address already claimed")
+			return
+		}
+		if err.Error() == "address is blocked" {
+			response.Error(w, http.StatusForbidden, "address is blocked")
+			return
+		}
+		if err.Error() == "address reserved by another user" {
+			response.Error(w, http.StatusForbidden, "address reserved by another user")
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]string{"status": "claimed"})
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {

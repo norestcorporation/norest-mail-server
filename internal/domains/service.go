@@ -123,6 +123,18 @@ func (s *Service) StartVerification(ctx context.Context, id, userID uuid.UUID) (
 		return d, nil
 	}
 
+	// Generate new verification token
+	token := make([]byte, 16)
+	rand.Read(token)
+	tokenHash := base64.RawURLEncoding.EncodeToString(token)
+	plaintextToken := base64.RawURLEncoding.EncodeToString(token)
+
+	// Store the hash and update status
+	err = s.repo.SetVerificationToken(ctx, d.ID, tokenHash)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create DOMAIN_VERIFY job
 	err = s.repo.CreateVerificationJob(ctx, d.ID)
 	if err != nil {
@@ -134,6 +146,10 @@ func (s *Service) StartVerification(ctx context.Context, id, userID uuid.UUID) (
 		return nil, err
 	}
 	d.VerificationStatus = string(VerificationVerifying)
+
+	// Return the plaintext token in the response for the user to configure DNS
+	// This is set in the temporary field that won't be persisted
+	d.VerificationToken = &plaintextToken
 
 	return d, nil
 }

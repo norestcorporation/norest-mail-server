@@ -1,4 +1,4 @@
--- 009_update_verification_check.sql
+-- 009_update_domain_verification_constraint.sql
 -- Update domains verification_status check constraint to include 'verifying'
 
 ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_verification_status_check;

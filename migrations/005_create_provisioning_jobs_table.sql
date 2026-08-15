@@ -1,4 +1,4 @@
--- 005_provisioning_jobs.sql
+-- 005_create_provisioning_jobs_table.sql
 -- Asynchronous provisioning job queue backed by PostgreSQL.
 -- No external message broker required.
 

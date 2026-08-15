@@ -1,4 +1,4 @@
--- 004_mailboxes.sql
+-- 004_create_mailboxes_table.sql
 -- Norest mailbox records linking product addresses to Stalwart accounts.
 -- This does NOT store messages. It only records:
 -- "This product address is associated with a Stalwart account."

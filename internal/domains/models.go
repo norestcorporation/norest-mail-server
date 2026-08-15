@@ -53,6 +53,7 @@ type Domain struct {
 	Status                string          `json:"status"`
 	VerificationStatus    string          `json:"verification_status"`
 	VerificationTokenHash *string         `json:"-"`
+	VerificationToken     *string         `json:"verification_token,omitempty"` // Temporary plaintext token for DNS configuration
 	OwnershipType         string          `json:"ownership_type"`
 	RegistrationEnabled   bool            `json:"registration_enabled"`
 	CreatedAt             time.Time       `json:"created_at"`

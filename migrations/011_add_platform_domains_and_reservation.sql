@@ -1,4 +1,4 @@
--- 011_platform_domains.sql
+-- 011_add_platform_domains_and_reservation.sql
 -- Platform-owned domains and proper address reservation system
 
 -- 1. Add platform domain support to domains table
@@ -6,35 +6,41 @@ ALTER TABLE domains ADD COLUMN IF NOT EXISTS ownership_type TEXT NOT NULL DEFAUL
 ALTER TABLE domains ADD COLUMN IF NOT EXISTS registration_enabled BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE domains ALTER COLUMN user_id DROP NOT NULL; -- Allow NULL for platform domains
 
--- 2. Add proper address reservation system
+-- 2. Update domains status check to include PLATFORM status if needed
+ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check;
+ALTER TABLE domains ADD CONSTRAINT domains_status_check CHECK (LOWER(status) IN ('pending', 'verifying', 'active', 'suspended', 'disabled'));
+
+-- 3. Add proper address reservation system
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS reserved_by UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS reserved_at TIMESTAMPTZ;
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS reserved_until TIMESTAMPTZ;
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS claimed_by UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ;
 
--- Update address status to support proper reservation flow
-ALTER TABLE addresses ALTER COLUMN status DROP DEFAULT;
+-- Update address status check to support proper reservation flow
+ALTER TABLE addresses DROP CONSTRAINT IF EXISTS addresses_status_check;
 ALTER TABLE addresses ADD CONSTRAINT addresses_status_check CHECK (status IN ('AVAILABLE', 'RESERVED', 'CLAIMED', 'BLOCKED'));
 ALTER TABLE addresses ALTER COLUMN status SET DEFAULT 'AVAILABLE';
 
--- 3. Create blocked addresses table
+-- 4. Create blocked addresses table
 CREATE TABLE IF NOT EXISTS blocked_addresses (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     domain_id  UUID NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
     local_part TEXT NOT NULL,
     reason     TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (domain_id, lower(local_part))
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 4. Create indexes for reservation queries
+-- Add unique constraint for blocked addresses
+ALTER TABLE blocked_addresses ADD CONSTRAINT IF NOT EXISTS blocked_addresses_unique UNIQUE (domain_id, lower(local_part));
+
+-- 5. Create indexes for reservation queries
 CREATE INDEX IF NOT EXISTS idx_addresses_reservation ON addresses (domain_id, lower(local_part), status) WHERE status = 'RESERVED';
 CREATE INDEX IF NOT EXISTS idx_addresses_reservation_expiry ON addresses (reserved_until) WHERE status = 'RESERVED';
 CREATE INDEX IF NOT EXISTS idx_addresses_claimed_by ON addresses (claimed_by);
 CREATE INDEX IF NOT EXISTS idx_blocked_addresses_domain ON blocked_addresses (domain_id);
 
--- 5. Add function to check address availability
+-- 6. Add function to check address availability
 CREATE OR REPLACE FUNCTION check_address_available(p_domain_id UUID, p_local_part TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -63,7 +69,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 6. Add function to reserve address with race safety
+-- 7. Add function to reserve address with race safety
 CREATE OR REPLACE FUNCTION reserve_address(
     p_domain_id UUID, 
     p_local_part TEXT, 
@@ -99,7 +105,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 7. Add function to claim reserved address
+-- 8. Add function to claim reserved address
 CREATE OR REPLACE FUNCTION claim_address(p_address_id UUID, p_user_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -153,7 +159,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 8. Add function to clean expired reservations
+-- 9. Add function to clean expired reservations
 CREATE OR REPLACE FUNCTION clean_expired_reservations() RETURNS INTEGER AS $$
 DECLARE
     v_count INTEGER;
@@ -176,7 +182,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 9. Insert default platform domain
+-- 10. Insert default platform domain (with correct status)
+-- Temporarily disable constraint to insert, then re-enable
+ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check;
+
 INSERT INTO domains (name, ownership_type, registration_enabled, status, verification_status, user_id, product_account_id)
-VALUES ('norestmail.com', 'PLATFORM', true, 'ACTIVE', 'verified', NULL, NULL)
-ON CONFLICT (lower(name)) DO NOTHING;
+VALUES ('norestmail.com', 'PLATFORM', true, 'active', 'verified', NULL, NULL)
+ON CONFLICT (lower(name)) DO UPDATE SET
+    ownership_type = EXCLUDED.ownership_type,
+    registration_enabled = EXCLUDED.registration_enabled,
+    status = EXCLUDED.status,
+    verification_status = EXCLUDED.verification_status;
+
+-- Re-enable the constraint
+ALTER TABLE domains ADD CONSTRAINT domains_status_check CHECK (LOWER(status) IN ('pending', 'verifying', 'active', 'suspended', 'disabled'));

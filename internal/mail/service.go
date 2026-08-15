@@ -50,6 +50,15 @@ type MailSessionResponse struct {
 	AccountID      string `json:"account_id"`
 }
 
+// ProvisioningStatus represents the current provisioning state of a user's mailbox.
+type ProvisioningStatus struct {
+	MailboxID         string  `json:"mailbox_id"`
+	AddressID         string  `json:"address_id"`
+	Status            string  `json:"status"`
+	StalwartAccountID *string `json:"stalwart_account_id"`
+	ReadyForSession   bool    `json:"ready_for_session"`
+}
+
 // CreateMailSession verifies the user and mailbox, then provisions a short-lived AppPassword
 // via Stalwart JMAP acting as the user's mail access token.
 func (s *Service) CreateMailSession(ctx context.Context, userID string, stalwartHost string) (*MailSessionResponse, error) {
@@ -60,7 +69,7 @@ func (s *Service) CreateMailSession(ctx context.Context, userID string, stalwart
 	}
 
 	if mailbox.Status != "active" {
-		return nil, fmt.Errorf("mailbox is not active (status: %s)", mailbox.Status)
+		return nil, fmt.Errorf("mailbox is not active")
 	}
 	
 	if mailbox.StalwartAccountID == nil || *mailbox.StalwartAccountID == "" {
@@ -82,5 +91,23 @@ func (s *Service) CreateMailSession(ctx context.Context, userID string, stalwart
 		JMAPSessionURL: jmapURL,
 		AccessToken:    secret,
 		AccountID:      *mailbox.StalwartAccountID,
+	}, nil
+}
+
+// GetProvisioningStatus returns the current provisioning state of the user's mailbox.
+func (s *Service) GetProvisioningStatus(ctx context.Context, userID string) (*ProvisioningStatus, error) {
+	mailbox, err := s.db.GetMailboxByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("getting mailbox: %w", err)
+	}
+
+	ready := mailbox.Status == "active" && mailbox.StalwartAccountID != nil && *mailbox.StalwartAccountID != ""
+
+	return &ProvisioningStatus{
+		MailboxID:         mailbox.ID,
+		AddressID:         mailbox.AddressID,
+		Status:            mailbox.Status,
+		StalwartAccountID: mailbox.StalwartAccountID,
+		ReadyForSession:   ready,
 	}, nil
 }

@@ -81,6 +81,8 @@ func (w *Worker) Run(ctx context.Context) error {
 			if err == nil {
 				metrics.SetProvisioningBacklog(pending, processing, retry, failed, oldest)
 			}
+			// Clean up expired reservations periodically
+			w.cleanupExpiredReservations(ctx)
 			w.poll(ctx)
 		}
 	}
@@ -150,6 +152,19 @@ func (w *Worker) recoverStuckJobs(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (w *Worker) cleanupExpiredReservations(ctx context.Context) {
+	// This function periodically cleans up expired address reservations
+	// so they become available again for other users
+	count, err := w.repo.CleanExpiredReservations(ctx)
+	if err != nil {
+		slog.Error("failed to clean expired reservations", "worker_id", w.workerID, "error", err)
+		return
+	}
+	if count > 0 {
+		slog.Info("cleaned expired reservations", "worker_id", w.workerID, "count", count)
+	}
 }
 
 func (w *Worker) poll(ctx context.Context) {

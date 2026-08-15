@@ -40,6 +40,19 @@ func (s *Service) CreateAddress(ctx context.Context, userID, domainID uuid.UUID,
 		return nil, errors.New("domain registration is not enabled")
 	}
 
+	// For custom domains, verify ownership and verification status
+	if domain.OwnershipType == string(domains.OwnershipTypeUser) {
+		// Check if domain belongs to the user
+		if domain.UserID == nil || *domain.UserID != userID {
+			return nil, errors.New("domain does not belong to the user")
+		}
+
+		// Check if domain is verified
+		if domain.VerificationStatus != string(domains.VerificationVerified) {
+			return nil, errors.New("domain must be verified before registering addresses")
+		}
+	}
+
 	normalized, err := NormalizeLocalPart(localPart)
 	if err != nil {
 		return nil, err
@@ -81,6 +94,19 @@ func (s *Service) ReserveAddress(ctx context.Context, userID, domainID uuid.UUID
 
 	if !domain.RegistrationEnabled {
 		return nil, errors.New("domain registration is not enabled")
+	}
+
+	// For custom domains, verify ownership and verification status
+	if domain.OwnershipType == string(domains.OwnershipTypeUser) {
+		// Check if domain belongs to the user
+		if domain.UserID == nil || *domain.UserID != userID {
+			return nil, errors.New("domain does not belong to the user")
+		}
+
+		// Check if domain is verified
+		if domain.VerificationStatus != string(domains.VerificationVerified) {
+			return nil, errors.New("domain must be verified before registering addresses")
+		}
 	}
 
 	normalized, err := NormalizeLocalPart(localPart)
@@ -145,6 +171,13 @@ func (s *Service) CheckAddressAvailability(ctx context.Context, domainID uuid.UU
 		return false, nil
 	}
 
+	// For custom domains, check verification status
+	if domain.OwnershipType == string(domains.OwnershipTypeUser) {
+		if domain.VerificationStatus != string(domains.VerificationVerified) {
+			return false, nil
+		}
+	}
+
 	normalized, err := NormalizeLocalPart(localPart)
 	if err != nil {
 		return false, err
@@ -154,10 +187,17 @@ func (s *Service) CheckAddressAvailability(ctx context.Context, domainID uuid.UU
 }
 
 func (s *Service) ListAddresses(ctx context.Context, userID, domainID uuid.UUID) ([]Address, error) {
-	// 1. Verify user owns domain
-	_, err := s.domainsRepo.GetByIDAndUser(ctx, domainID, userID)
+	// 1. Verify domain exists and check ownership for custom domains
+	domain, err := s.domainsRepo.GetByID(ctx, domainID)
 	if err != nil {
 		return nil, err
+	}
+
+	// For custom domains, verify ownership
+	if domain.OwnershipType == string(domains.OwnershipTypeUser) {
+		if domain.UserID == nil || *domain.UserID != userID {
+			return nil, errors.New("domain does not belong to the user")
+		}
 	}
 
 	return s.repo.ListByDomainID(ctx, domainID)

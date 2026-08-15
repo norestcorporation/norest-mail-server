@@ -107,9 +107,14 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 
 				// Addresses
 				r.Route("/{domainID}/addresses", func(r chi.Router) {
-					r.Post("/", addressesHandler.Create)
+					r.Post("/reserve", addressesHandler.Reserve)
 					r.Get("/", addressesHandler.List)
 					r.Get("/check/{localPart}", addressesHandler.CheckAvailability)
+				})
+				
+				// Address operations
+				r.Route("/addresses", func(r chi.Router) {
+					r.Post("/{addressID}/claim", addressesHandler.Claim)
 				})
 			})
 
@@ -117,6 +122,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 			r.Route("/mail", func(r chi.Router) {
 				r.With(mailSessionLimiter.Middleware(ratelimit.UserKey)).Post("/session", mailHandler.CreateSession)
 				r.Get("/account", mailHandler.GetAccount)
+				r.Get("/provisioning-status", mailHandler.GetProvisioningStatus)
 			})
 
 			// Product Layer
