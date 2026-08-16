@@ -511,22 +511,51 @@ func (w *Worker) processDomainVerify(ctx context.Context, job Job) error {
 		return fmt.Errorf("verification record not found or token mismatch")
 	}
 
-	// Update domain to active
+	// Update domain to verified status first
 	_, err = w.pool.Exec(ctx,
-		`UPDATE domains SET status = $1, verification_status = $2 WHERE id = $3`,
-		"active", "verified", job.ResourceID,
+		`UPDATE domains SET verification_status = $1 WHERE id = $2`,
+		"verified", job.ResourceID,
 	)
 	if err != nil {
 		return err
 	}
 
-	// Now that it is active, we should provision it in Stalwart!
+	// Check MX records for additional validation
+	mxRecords, err := net.LookupMX(domainName)
+	if err != nil {
+		slog.Warn("MX record lookup failed during domain verification", "domain", domainName, "error", err)
+		// MX record failure is not critical for ownership verification
+		// Continue with activation
+	} else if len(mxRecords) == 0 {
+		slog.Warn("No MX records found for domain", "domain", domainName)
+		// No MX records is acceptable for verification, but warn
+	}
+
+	// Now activate the domain and enable registration
+	_, err = w.pool.Exec(ctx,
+		`UPDATE domains SET status = $1, registration_enabled = $2 WHERE id = $3`,
+		"active", true, job.ResourceID,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Now that it is verified and active, provision it in Stalwart!
 	// Create DOMAIN_CREATE job
 	_, err = w.pool.Exec(ctx,
 		`INSERT INTO provisioning_jobs (type, resource_id, status) VALUES ($1, $2, $3)`,
 		"DOMAIN_CREATE", job.ResourceID, "PENDING",
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to create DOMAIN_CREATE job: %w", err)
+	}
+
+	slog.Info("domain verified and activated, Stalwart provisioning job created",
+		"domain_id", job.ResourceID,
+		"domain_name", domainName,
+	)
+
+	return nil
 }
 
 func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {

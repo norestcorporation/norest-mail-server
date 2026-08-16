@@ -1,4 +1,4 @@
--- 002_domains.sql
+-- 002_create_domains_table.sql
 -- Mail domains registered in the Norest control plane
 
 CREATE TABLE domains (
@@ -12,8 +12,8 @@ CREATE TABLE domains (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Domain names must be unique and are stored normalized to lowercase
-CREATE UNIQUE INDEX idx_domains_name_unique ON domains (lower(name));
+-- Domain names must be unique
+CREATE UNIQUE INDEX idx_domains_name_unique ON domains (name);
 
 -- Index for looking up domains by user
 CREATE INDEX idx_domains_user_id ON domains (user_id);

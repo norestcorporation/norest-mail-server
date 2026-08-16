@@ -88,10 +88,13 @@ func (r *Repository) createAddressTxWithRetry(ctx context.Context, domainID uuid
 
 // ReserveAddress reserves an address for a user using the database function for race safety.
 func (r *Repository) ReserveAddress(ctx context.Context, domainID uuid.UUID, localPart string, userID uuid.UUID, durationHours int) (*Address, error) {
+	// Normalize local part to lowercase
+	normalized := strings.ToLower(strings.TrimSpace(localPart))
+	
 	var addressID uuid.UUID
 	err := r.pool.QueryRow(ctx,
 		`SELECT reserve_address($1, $2, $3, $4)`,
-		domainID, localPart, userID, durationHours,
+		domainID, normalized, userID, durationHours,
 	).Scan(&addressID)
 	
 	if err != nil {
@@ -159,6 +162,22 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*Address, error
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, domain_id, local_part, status, reserved_by, reserved_at, reserved_until, claimed_by, claimed_at, created_at, updated_at
 		 FROM addresses WHERE id = $1`, id,
+	).Scan(&a.ID, &a.DomainID, &a.LocalPart, &a.Status, &a.ReservedBy, &a.ReservedAt, &a.ReservedUntil, &a.ClaimedBy, &a.ClaimedAt, &a.CreatedAt, &a.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errors.New("address not found")
+		}
+		return nil, err
+	}
+	return &a, nil
+}
+
+// GetByDomainAndLocalPart returns an address by domain ID and local part.
+func (r *Repository) GetByDomainAndLocalPart(ctx context.Context, domainID uuid.UUID, localPart string) (*Address, error) {
+	var a Address
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, domain_id, local_part, status, reserved_by, reserved_at, reserved_until, claimed_by, claimed_at, created_at, updated_at
+		 FROM addresses WHERE domain_id = $1 AND lower(local_part) = lower($2)`, domainID, localPart,
 	).Scan(&a.ID, &a.DomainID, &a.LocalPart, &a.Status, &a.ReservedBy, &a.ReservedAt, &a.ReservedUntil, &a.ClaimedBy, &a.ClaimedAt, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

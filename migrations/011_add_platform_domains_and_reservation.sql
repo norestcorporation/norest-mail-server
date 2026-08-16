@@ -7,8 +7,21 @@ ALTER TABLE domains ADD COLUMN IF NOT EXISTS registration_enabled BOOLEAN NOT NU
 ALTER TABLE domains ALTER COLUMN user_id DROP NOT NULL; -- Allow NULL for platform domains
 
 -- 2. Update domains status check to include PLATFORM status if needed
-ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check;
-ALTER TABLE domains ADD CONSTRAINT domains_status_check CHECK (LOWER(status) IN ('pending', 'verifying', 'active', 'suspended', 'disabled'));
+-- Drop any existing status check constraint (it might have a different auto-generated name)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'domains'::regclass 
+        AND conname LIKE '%status%check%'
+    ) THEN
+        ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check;
+        ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check1;
+        ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check2;
+    END IF;
+END $$;
+
+ALTER TABLE domains ADD CONSTRAINT domains_status_check CHECK (status IN ('pending', 'verifying', 'active', 'suspended', 'disabled'));
 
 -- 3. Add proper address reservation system
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS reserved_by UUID REFERENCES users(id) ON DELETE SET NULL;
@@ -18,7 +31,20 @@ ALTER TABLE addresses ADD COLUMN IF NOT EXISTS claimed_by UUID REFERENCES users(
 ALTER TABLE addresses ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ;
 
 -- Update address status check to support proper reservation flow
-ALTER TABLE addresses DROP CONSTRAINT IF EXISTS addresses_status_check;
+-- Drop any existing status check constraint (it might have a different auto-generated name)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'addresses'::regclass 
+        AND conname LIKE '%status%check%'
+    ) THEN
+        ALTER TABLE addresses DROP CONSTRAINT IF EXISTS addresses_status_check;
+        ALTER TABLE addresses DROP CONSTRAINT IF EXISTS addresses_status_check1;
+        ALTER TABLE addresses DROP CONSTRAINT IF EXISTS addresses_status_check2;
+    END IF;
+END $$;
+
 ALTER TABLE addresses ADD CONSTRAINT addresses_status_check CHECK (status IN ('AVAILABLE', 'RESERVED', 'CLAIMED', 'BLOCKED'));
 ALTER TABLE addresses ALTER COLUMN status SET DEFAULT 'AVAILABLE';
 
@@ -32,10 +58,12 @@ CREATE TABLE IF NOT EXISTS blocked_addresses (
 );
 
 -- Add unique constraint for blocked addresses
-ALTER TABLE blocked_addresses ADD CONSTRAINT IF NOT EXISTS blocked_addresses_unique UNIQUE (domain_id, lower(local_part));
+-- Note: PostgreSQL doesn't support UNIQUE with function calls inside DO blocks
+-- Using a simpler approach with standard UNIQUE constraint
+ALTER TABLE blocked_addresses ADD CONSTRAINT blocked_addresses_unique UNIQUE (domain_id, local_part);
 
 -- 5. Create indexes for reservation queries
-CREATE INDEX IF NOT EXISTS idx_addresses_reservation ON addresses (domain_id, lower(local_part), status) WHERE status = 'RESERVED';
+CREATE INDEX IF NOT EXISTS idx_addresses_reservation ON addresses (domain_id, local_part, status) WHERE status = 'RESERVED';
 CREATE INDEX IF NOT EXISTS idx_addresses_reservation_expiry ON addresses (reserved_until) WHERE status = 'RESERVED';
 CREATE INDEX IF NOT EXISTS idx_addresses_claimed_by ON addresses (claimed_by);
 CREATE INDEX IF NOT EXISTS idx_blocked_addresses_domain ON blocked_addresses (domain_id);
@@ -45,12 +73,12 @@ CREATE OR REPLACE FUNCTION check_address_available(p_domain_id UUID, p_local_par
 RETURNS BOOLEAN AS $$
 BEGIN
     -- Check if address is blocked
-    IF EXISTS (SELECT 1 FROM blocked_addresses WHERE domain_id = p_domain_id AND lower(local_part) = lower(p_local_part)) THEN
+    IF EXISTS (SELECT 1 FROM blocked_addresses WHERE domain_id = p_domain_id AND local_part = p_local_part) THEN
         RETURN FALSE;
     END IF;
     
     -- Check if address is already claimed
-    IF EXISTS (SELECT 1 FROM addresses WHERE domain_id = p_domain_id AND lower(local_part) = lower(p_local_part) AND status = 'CLAIMED') THEN
+    IF EXISTS (SELECT 1 FROM addresses WHERE domain_id = p_domain_id AND local_part = p_local_part AND status = 'CLAIMED') THEN
         RETURN FALSE;
     END IF;
     
@@ -58,7 +86,7 @@ BEGIN
     IF EXISTS (
         SELECT 1 FROM addresses 
         WHERE domain_id = p_domain_id 
-        AND lower(local_part) = lower(p_local_part) 
+        AND local_part = p_local_part 
         AND status = 'RESERVED' 
         AND reserved_until > NOW()
     ) THEN
@@ -84,8 +112,8 @@ BEGIN
     
     -- Try to insert new reservation
     INSERT INTO addresses (domain_id, local_part, status, reserved_by, reserved_at, reserved_until)
-    VALUES (p_domain_id, lower(p_local_part), 'RESERVED', p_user_id, NOW(), v_expires_at)
-    ON CONFLICT (domain_id, lower(local_part)) 
+    VALUES (p_domain_id, p_local_part, 'RESERVED', p_user_id, NOW(), v_expires_at)
+    ON CONFLICT (domain_id, local_part) 
     DO UPDATE SET
         status = 'RESERVED',
         reserved_by = p_user_id,
@@ -184,15 +212,26 @@ $$ LANGUAGE plpgsql;
 
 -- 10. Insert default platform domain (with correct status)
 -- Temporarily disable constraint to insert, then re-enable
-ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'domains'::regclass 
+        AND conname LIKE '%status%check%'
+    ) THEN
+        ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check;
+        ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check1;
+        ALTER TABLE domains DROP CONSTRAINT IF EXISTS domains_status_check2;
+    END IF;
+END $$;
 
 INSERT INTO domains (name, ownership_type, registration_enabled, status, verification_status, user_id, product_account_id)
 VALUES ('norestmail.com', 'PLATFORM', true, 'active', 'verified', NULL, NULL)
-ON CONFLICT (lower(name)) DO UPDATE SET
+ON CONFLICT (name) DO UPDATE SET
     ownership_type = EXCLUDED.ownership_type,
     registration_enabled = EXCLUDED.registration_enabled,
     status = EXCLUDED.status,
     verification_status = EXCLUDED.verification_status;
 
 -- Re-enable the constraint
-ALTER TABLE domains ADD CONSTRAINT domains_status_check CHECK (LOWER(status) IN ('pending', 'verifying', 'active', 'suspended', 'disabled'));
+ALTER TABLE domains ADD CONSTRAINT domains_status_check CHECK (status IN ('pending', 'verifying', 'active', 'suspended', 'disabled'));

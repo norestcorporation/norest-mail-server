@@ -1,5 +1,5 @@
 -- 010_add_job_lease_mechanism.sql
--- Add lease and heartbeat fields for worker reliability and stuck job recovery
+-- Add lease and heartbeat fields for worker reliability
 
 ALTER TABLE provisioning_jobs
 ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ,

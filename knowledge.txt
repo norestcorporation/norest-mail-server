@@ -1,0 +1,14 @@
+Access URLs:
+Stalwart Web Interface: http://localhost:8081/
+Norest API: http://localhost:8080/
+Norest API Health Check: http://localhost:8080/health
+PostgreSQL: localhost:5433 (user: norest, database: norest)
+Stalwart Admin Access:
+From your bootstrap output, the admin credentials are:
+
+Username: admin@localhost
+Password: YvD6rKIct6m7iJO2
+
+You can access the Stalwart web interface at http://localhost:8081/ using
+these credentials, or use the JMAP API endpoint
+at http://localhost:8081/jmap.

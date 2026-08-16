@@ -1,4 +1,4 @@
--- 001_users.sql
+-- 001_create_users_table.sql
 -- Norest platform users (control-plane entity, NOT Stalwart mail users)
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -12,5 +12,5 @@ CREATE TABLE users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Unique constraint on normalized (lowercased) email
-CREATE UNIQUE INDEX idx_users_email_unique ON users (lower(email));
+-- Unique constraint on email
+CREATE UNIQUE INDEX idx_users_email_unique ON users (email);

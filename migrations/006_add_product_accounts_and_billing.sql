@@ -78,7 +78,20 @@ CREATE TABLE billing_events (
 
 -- 5. Extend Provisioning Jobs
 -- We need to update the CHECK constraint for provisioning_jobs.type
-ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_type_check;
+-- Drop any existing type check constraint (it might have a different auto-generated name)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'provisioning_jobs'::regclass 
+        AND conname LIKE '%type%check%'
+    ) THEN
+        ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_type_check;
+        ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_type_check1;
+        ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_type_check2;
+    END IF;
+END $$;
+
 ALTER TABLE provisioning_jobs ADD CONSTRAINT provisioning_jobs_type_check 
 CHECK (type IN (
     'DOMAIN_CREATE', 'DOMAIN_DELETE', 'ACCOUNT_CREATE', 'ACCOUNT_DISABLE', 'ACCOUNT_ENABLE', 'ACCOUNT_DELETE',

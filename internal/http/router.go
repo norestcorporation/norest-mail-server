@@ -17,6 +17,7 @@ import (
 	"github.com/norest-mail/server/internal/metrics"
 	"github.com/norest-mail/server/internal/policy"
 	"github.com/norest-mail/server/internal/ratelimit"
+	"github.com/norest-mail/server/internal/registration"
 	"github.com/norest-mail/server/internal/response"
 	"github.com/norest-mail/server/internal/stalwart"
 )
@@ -70,11 +71,16 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 	addressesService := addresses.NewService(pool)
 	addressesHandler := addresses.NewHandler(addressesService)
 
-	billingService := billing.NewService(pool, nil)
-	billingHandler := billing.NewHandler(billingService)
-
 	policyService := policy.NewService(pool)
 	policyHandler := policy.NewHandler(policyService)
+
+	registrationEnhancedService := registration.NewEnhancedService(pool, authService, domainsService, addressesService, policyService)
+	registrationEnhancedHandler := registration.NewEnhancedHandler(registrationEnhancedService)
+
+	registrationHandler := registration.NewHandler(authService, domainsService, addressesService, pool)
+
+	billingService := billing.NewService(pool, nil)
+	billingHandler := billing.NewHandler(billingService)
 
 	dbImpl := db.NewMailRepository(pool)
 	// We assume Stalwart is accessible at localhost:8081 for the JMAP frontend (per Ch3 dev URL rules)
@@ -84,11 +90,18 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 	// API v1 — prepared for Chapter 2
 	r.Route("/v1", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
-			r.With(registerLimiter.Middleware(ratelimit.IPKey)).Post("/register", authHandler.Register)
+			r.With(registerLimiter.Middleware(ratelimit.IPKey)).Post("/register", registrationEnhancedHandler.Register)
 			r.With(loginLimiter.Middleware(ratelimit.IPKey)).Post("/login", authHandler.Login)
 		})
 
 		r.With(auth.RequireAuth(authService)).Get("/me", authHandler.Me)
+
+		// Registration flow endpoints
+		r.Route("/registration", func(r chi.Router) {
+			r.With(auth.RequireAuth(authService)).Get("/status", registrationHandler.GetRegistrationStatus)
+			r.With(auth.RequireAuth(authService)).Post("/domains/{domainID}/verify", registrationHandler.InitiateDomainVerification)
+			r.With(auth.RequireAuth(authService)).Get("/domains/{domainID}/verify", registrationHandler.CheckDomainVerificationStatus)
+		})
 
 		// Protected routes
 		r.Group(func(r chi.Router) {

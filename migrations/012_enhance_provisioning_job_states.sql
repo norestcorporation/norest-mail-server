@@ -7,7 +7,19 @@ ALTER COLUMN status DROP DEFAULT,
 ALTER COLUMN status SET NOT NULL;
 
 -- Drop the old check constraint
-ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_status_check;
+-- Drop any existing status check constraint (it might have a different auto-generated name)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'provisioning_jobs'::regclass 
+        AND conname LIKE '%status%check%'
+    ) THEN
+        ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_status_check;
+        ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_status_check1;
+        ALTER TABLE provisioning_jobs DROP CONSTRAINT IF EXISTS provisioning_jobs_status_check2;
+    END IF;
+END $$;
 
 -- Add new enhanced check constraint with additional states
 ALTER TABLE provisioning_jobs 

@@ -308,3 +308,28 @@ func (r *Repository) CreatePlatformDomainTx(ctx context.Context, name, ownership
 
 	return &d, nil
 }
+
+// UpdateDomainStatus updates the domain status and registration enabled flag.
+func (r *Repository) UpdateDomainStatus(ctx context.Context, domainID uuid.UUID, status string, registrationEnabled bool) error {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE domains SET status = $1, registration_enabled = $2 WHERE id = $3`,
+		status, registrationEnabled, domainID,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrDomainNotFound
+	}
+	return nil
+}
+
+// CreateDomainCreateJob creates a DOMAIN_CREATE provisioning job for Stalwart domain creation.
+func (r *Repository) CreateDomainCreateJob(ctx context.Context, domainID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx,
+		`INSERT INTO provisioning_jobs (type, resource_id, status)
+		 VALUES ($1, $2, $3)`,
+		"DOMAIN_CREATE", domainID, "PENDING",
+	)
+	return err
+}

@@ -37,7 +37,7 @@ type Address struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
-var localPartRegex = regexp.MustCompile(`^[a-z0-9\.\-\+]+$`)
+var localPartRegex = regexp.MustCompile(`^[a-z0-9\.\-\+_]+$`)
 
 func NormalizeLocalPart(localPart string) (string, error) {
 	localPart = strings.TrimSpace(localPart)

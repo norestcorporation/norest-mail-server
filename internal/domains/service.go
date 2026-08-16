@@ -53,6 +53,19 @@ func (s *Service) CreateDomain(ctx context.Context, userID uuid.UUID, name strin
 	return d, nil
 }
 
+// ActivateDomainForStalwart marks a domain as ready for Stalwart provisioning and creates the DOMAIN_CREATE job.
+// This should only be called after domain verification is complete.
+func (s *Service) ActivateDomainForStalwart(ctx context.Context, domainID uuid.UUID) error {
+	// Update domain status to active and enable registration
+	err := s.repo.UpdateDomainStatus(ctx, domainID, string(StatusActive), true)
+	if err != nil {
+		return err
+	}
+
+	// Create DOMAIN_CREATE job for Stalwart provisioning
+	return s.repo.CreateDomainCreateJob(ctx, domainID)
+}
+
 // CreatePlatformDomain creates a platform-owned domain (admin operation).
 func (s *Service) CreatePlatformDomain(ctx context.Context, name, ownershipType string, registrationEnabled bool) (*Domain, error) {
 	normalized, err := NormalizeDomainName(name)
@@ -92,7 +105,8 @@ func (s *Service) GetDomainForAddressCheck(ctx context.Context, domainID uuid.UU
 	return domain, nil
 }
 
-// GetDomainByName returns a domain by name (for checking existence).
+// GetDomainByName returns a domain by name (for checking existence and type).
+// This method doesn't require user ownership check as it's used for domain type detection.
 func (s *Service) GetDomainByName(ctx context.Context, name string) (*Domain, error) {
 	return s.repo.GetByName(ctx, name)
 }

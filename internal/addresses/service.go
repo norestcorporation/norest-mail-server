@@ -202,3 +202,12 @@ func (s *Service) ListAddresses(ctx context.Context, userID, domainID uuid.UUID)
 
 	return s.repo.ListByDomainID(ctx, domainID)
 }
+
+// GetAddressByDomainAndLocalPart returns an address by domain ID and local part.
+func (s *Service) GetAddressByDomainAndLocalPart(ctx context.Context, domainID uuid.UUID, localPart string) (*Address, error) {
+	normalized, err := NormalizeLocalPart(localPart)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.GetByDomainAndLocalPart(ctx, domainID, normalized)
+}

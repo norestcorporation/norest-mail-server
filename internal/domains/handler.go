@@ -240,22 +240,70 @@ func (h *Handler) GetVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create DNS checker and perform real-time verification
+	dnsChecker := NewDNSChecker()
+	
 	// If the domain has a temporary plaintext token (from verification start), use it
 	// Otherwise, indicate the user needs to restart verification
 	dnsValue := "norest-verification=TOKEN_FROM_START_VERIFICATION"
 	message := "If you lost your verification token, restart verification to get a new one"
+	txtVerified := false
+	var mxRecords []string
+	mxVerified := false
 	
 	if domain.VerificationToken != nil && *domain.VerificationToken != "" {
 		dnsValue = "norest-verification=" + *domain.VerificationToken
 		message = "Configure this TXT record in your DNS"
+		
+		// Perform real-time DNS verification
+		if domain.VerificationTokenHash != nil {
+			dnsResult, _ := dnsChecker.PerformFullVerification(r.Context(), domain.Name, *domain.VerificationTokenHash)
+			txtVerified = dnsResult.TXTRecordVerified
+			mxVerified = dnsResult.MXRecordVerified
+			mxRecords = dnsResult.MXRecords
+			
+			if txtVerified {
+				message = "TXT record verified! MX records also checked."
+			}
+		}
 	}
 	
+	// Get expected MX records for user guidance
+	expectedMX := dnsChecker.GetExpectedMXRecords(domain.Name)
+	
 	res := map[string]interface{}{
-		"type":  "TXT",
-		"name":  "_norest-verification." + domain.Name,
-		"value": dnsValue,
-		"status": domain.VerificationStatus,
+		"domain_id":   domain.ID,
+		"domain_name": domain.Name,
+		"status":      domain.VerificationStatus,
+		"dns_record": map[string]interface{}{
+			"type":  "TXT",
+			"name":  "_norest-verification." + domain.Name,
+			"value": dnsValue,
+		},
+		"expected_mx_records": expectedMX,
+		"verification": map[string]interface{}{
+			"txt_verified": txtVerified,
+			"mx_verified":  mxVerified,
+			"mx_records":   mxRecords,
+		},
 		"message": message,
+		"next_action": func() string {
+			switch domain.VerificationStatus {
+			case string(VerificationPending):
+				return "start_verification"
+			case string(VerificationVerifying):
+				if txtVerified {
+					return "wait_for_activation"
+				}
+				return "wait_for_dns_propagation"
+			case string(VerificationVerified):
+				return "register_address"
+			case string(VerificationFailed):
+				return "retry_verification"
+			default:
+				return "unknown"
+			}
+		}(),
 	}
 
 	response.JSON(w, http.StatusOK, res)

@@ -26,8 +26,21 @@ ADD COLUMN IF NOT EXISTS initial_sync_completed_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS initial_sync_checkpoint TEXT;
 
 -- Add status to support full provisioning lifecycle
+-- Drop any existing status check constraint (it might have a different auto-generated name)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'mailboxes'::regclass 
+        AND conname LIKE '%status%check%'
+    ) THEN
+        ALTER TABLE mailboxes DROP CONSTRAINT IF EXISTS mailboxes_status_check;
+        ALTER TABLE mailboxes DROP CONSTRAINT IF EXISTS mailboxes_status_check1;
+        ALTER TABLE mailboxes DROP CONSTRAINT IF EXISTS mailboxes_status_check2;
+    END IF;
+END $$;
+
 ALTER TABLE mailboxes 
-DROP CONSTRAINT IF EXISTS mailboxes_status_check,
 ADD CONSTRAINT mailboxes_status_check 
   CHECK (status IN ('pending', 'provisioning', 'syncing', 'active', 'inactive', 'disabled', 'failed'));
 

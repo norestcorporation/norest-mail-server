@@ -10,8 +10,8 @@ CREATE TABLE addresses (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Composite uniqueness: domain_id + normalized local_part
-CREATE UNIQUE INDEX idx_addresses_domain_local_unique ON addresses (domain_id, lower(local_part));
+-- Composite uniqueness: domain_id + local_part
+CREATE UNIQUE INDEX idx_addresses_domain_local_unique ON addresses (domain_id, local_part);
 
 -- Index for looking up addresses by domain
 CREATE INDEX idx_addresses_domain_id ON addresses (domain_id);
