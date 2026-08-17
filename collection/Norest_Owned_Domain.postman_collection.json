@@ -26,6 +26,11 @@
       "type": "string"
     },
     {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "domain_id",
       "value": "",
       "type": "string"
@@ -336,12 +341,101 @@
                   "    if (jsonData.access_token) {",
                   "        pm.environment.set('access_token', jsonData.access_token);",
                   "    }",
-                  "    if (jsonData.user && jsonData.user.id) {",
-                  "        pm.environment.set('account_id', jsonData.user.id);",
+                  "    if (jsonData.refresh_token) {",
+                  "        pm.environment.set('refresh_token', jsonData.refresh_token);",
                   "    }",
-                  "    if (jsonData.user && jsonData.user.email) {",
-                  "        pm.environment.set('email', jsonData.user.email);",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set('account_id', jsonData.id);",
                   "    }",
+                  "    if (jsonData.email) {",
+                  "        pm.environment.set('email', jsonData.email);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "refresh"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.access_token) {",
+                  "        pm.environment.set('access_token', jsonData.access_token);",
+                  "    }",
+                  "    if (jsonData.refresh_token) {",
+                  "        pm.environment.set('refresh_token', jsonData.refresh_token);",
+                  "    }",
+                  "}",
+                  "else {",
+                  "    console.log('Token refresh failed, please login again');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "logout"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.set('access_token', '');",
+                  "    pm.environment.set('refresh_token', '');",
+                  "    console.log('Logged out successfully');",
                   "}"
                 ],
                 "type": "text/javascript"

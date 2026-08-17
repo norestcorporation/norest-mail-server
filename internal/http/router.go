@@ -105,9 +105,11 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 		r.Route("/auth", func(r chi.Router) {
 			r.With(registerLimiter.Middleware(ratelimit.IPKey)).Post("/register", registrationEnhancedHandler.Register)
 			r.With(loginLimiter.Middleware(ratelimit.IPKey)).Post("/login", authHandler.Login)
+			r.Post("/refresh", authHandler.RefreshToken)
 		})
 
 		r.With(auth.RequireAuth(authService)).Get("/me", authHandler.Me)
+		r.With(auth.RequireAuth(authService)).Post("/logout", authHandler.Logout)
 
 		// Registration flow endpoints
 		r.Route("/registration", func(r chi.Router) {

@@ -82,3 +82,44 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		Status: string(user.Status),
 	})
 }
+
+func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	var req RefreshTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.RefreshToken == "" {
+		response.Error(w, http.StatusBadRequest, "refresh_token is required")
+		return
+	}
+
+	res, err := h.service.RefreshToken(r.Context(), req.RefreshToken)
+	if err != nil {
+		if err == ErrInvalidToken {
+			response.Error(w, http.StatusUnauthorized, "invalid or expired refresh token")
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	err := h.service.Logout(r.Context(), userID)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]string{"message": "logged out successfully"})
+}
