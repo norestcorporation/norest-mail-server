@@ -16,6 +16,7 @@ import (
 	"github.com/norest-mail/server/internal/mail"
 	"github.com/norest-mail/server/internal/metrics"
 	"github.com/norest-mail/server/internal/policy"
+	"github.com/norest-mail/server/internal/public"
 	"github.com/norest-mail/server/internal/ratelimit"
 	"github.com/norest-mail/server/internal/realtime"
 	"github.com/norest-mail/server/internal/registration"
@@ -80,6 +81,8 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 
 	registrationHandler := registration.NewHandler(authService, domainsService, addressesService, pool)
 
+	publicHandler := public.NewHandler(domainsService, addressesService, authService)
+
 	billingService := billing.NewService(pool, nil)
 	billingHandler := billing.NewHandler(billingService)
 
@@ -91,6 +94,14 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 
 	// API v1 — prepared for Chapter 2
 	r.Route("/v1", func(r chi.Router) {
+		// Public endpoints (no authentication required)
+		r.Route("/public", func(r chi.Router) {
+			r.Get("/domains", publicHandler.ListPlatformDomains)
+			r.Get("/domains/{domainName}/check/{username}", publicHandler.CheckUsernameAvailability)
+			r.With(registerLimiter.Middleware(ratelimit.IPKey)).Post("/reserve", publicHandler.ReserveUsername)
+			r.With(registerLimiter.Middleware(ratelimit.IPKey)).Post("/register", publicHandler.RegisterUser)
+		})
+
 		r.Route("/auth", func(r chi.Router) {
 			r.With(registerLimiter.Middleware(ratelimit.IPKey)).Post("/register", registrationEnhancedHandler.Register)
 			r.With(loginLimiter.Middleware(ratelimit.IPKey)).Post("/login", authHandler.Login)

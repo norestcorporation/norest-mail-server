@@ -22,6 +22,7 @@ type AuthResponse struct {
 	Status       string    `json:"status"`
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
+	ExpiresIn    int64     `json:"expires_in"` // Token expiration time in seconds
 }
 
 type UserResponse struct {

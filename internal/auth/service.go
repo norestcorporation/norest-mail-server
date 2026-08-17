@@ -62,6 +62,7 @@ func (s *Service) Register(ctx context.Context, email, password string) (*AuthRe
 		Status:       string(user.Status),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		ExpiresIn:    900, // 15 minutes in seconds
 	}, nil
 }
 
@@ -95,6 +96,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (*AuthRespo
 		Status:       string(user.Status),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		ExpiresIn:    900, // 15 minutes in seconds
 	}, nil
 }
 

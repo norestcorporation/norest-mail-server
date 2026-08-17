@@ -7,7 +7,7 @@ Stalwart Admin Access:
 From your bootstrap output, the admin credentials are:
 
 Username: admin@localhost
-Password: giypy0QKdoJqf2dt
+Password: 1oMQdXfJVmtl3weC
 
 You can access the Stalwart web interface at http://localhost:8081/ using
 these credentials, or use the JMAP API endpoint

@@ -128,6 +128,137 @@
   ],
   "item": [
     {
+      "name": "00. Public Endpoints (No Auth)",
+      "item": [
+        {
+          "name": "List Platform Domains",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/public/domains",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "public", "domains"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.domains && Array.isArray(jsonData.data.domains) && jsonData.data.domains.length > 0) {",
+                  "        pm.environment.set('domain_name', jsonData.data.domains[0].domain);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check Username Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/public/domains/{{domain_name}}/check/{{username}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "public", "domains", "{{domain_name}}", "check", "{{username}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve Username",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"domain\": \"{{domain_name}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/public/reserve",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "public", "reserve"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.reservation_id) {",
+                  "        pm.environment.set('reservation_id', jsonData.data.reservation_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"domain\": \"{{domain_name}}\",\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"display_name\": \"Test User\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/public/register",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "public", "register"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        if (jsonData.data.access_token) {",
+                  "            pm.environment.set('access_token', jsonData.data.access_token);",
+                  "        }",
+                  "        if (jsonData.data.user_id) {",
+                  "            pm.environment.set('account_id', jsonData.data.user_id);",
+                  "        }",
+                  "        if (jsonData.data.email) {",
+                  "            pm.environment.set('email', jsonData.data.email);",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "01. Authentication",
       "item": [
         {
