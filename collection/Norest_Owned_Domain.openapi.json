@@ -1,0 +1,1467 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Norest Mail - Platform Domain API",
+    "description": "Complete API documentation for Norest Mail Platform Domain flow",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication and authorization"
+    },
+    {
+      "name": "Platform Domain",
+      "description": "Platform domain management"
+    },
+    {
+      "name": "Email Address",
+      "description": "Email address reservation and claiming"
+    },
+    {
+      "name": "Mail Account Provisioning",
+      "description": "Mail account and session management"
+    },
+    {
+      "name": "Mailbox",
+      "description": "Mailbox operations"
+    },
+    {
+      "name": "Messages",
+      "description": "Message listing and retrieval"
+    },
+    {
+      "name": "Attachments",
+      "description": "File attachment management"
+    },
+    {
+      "name": "Drafts",
+      "description": "Draft message management"
+    },
+    {
+      "name": "Send",
+      "description": "Message sending operations"
+    },
+    {
+      "name": "Threads",
+      "description": "Thread management and operations"
+    },
+    {
+      "name": "Message Actions",
+      "description": "Message state and folder actions"
+    },
+    {
+      "name": "Realtime",
+      "description": "WebSocket real-time updates"
+    },
+    {
+      "name": "Account Management",
+      "description": "Account usage and limits"
+    },
+    {
+      "name": "Health & Monitoring",
+      "description": "System health and monitoring endpoints"
+    }
+  ],
+  "paths": {
+    "/v1/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "User already exists"
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get current user",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Current user details"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/domains/platform": {
+      "get": {
+        "tags": ["Platform Domain"],
+        "summary": "List available platform domains",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "List of platform domains"
+          }
+        }
+      }
+    },
+    "/v1/domains/check/{name}": {
+      "get": {
+        "tags": ["Platform Domain"],
+        "summary": "Check domain status",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain status"
+          },
+          "404": {
+            "description": "Domain not found"
+          }
+        }
+      }
+    },
+    "/v1/domains/{id}": {
+      "get": {
+        "tags": ["Platform Domain"],
+        "summary": "Get domain details",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain details"
+          },
+          "404": {
+            "description": "Domain not found"
+          }
+        }
+      }
+    },
+    "/v1/domains/{domainID}/addresses/check/{localPart}": {
+      "get": {
+        "tags": ["Email Address"],
+        "summary": "Check username availability",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "domainID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "localPart",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability status"
+          }
+        }
+      }
+    },
+    "/v1/domains/{domainID}/addresses/reserve": {
+      "post": {
+        "tags": ["Email Address"],
+        "summary": "Reserve email address",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "domainID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["local_part"],
+                "properties": {
+                  "local_part": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Address reserved"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Address already exists"
+          }
+        }
+      }
+    },
+    "/v1/domains/{domainID}/addresses": {
+      "get": {
+        "tags": ["Email Address"],
+        "summary": "List addresses for domain",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "domainID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of addresses"
+          }
+        }
+      }
+    },
+    "/v1/addresses/{addressID}/claim": {
+      "post": {
+        "tags": ["Email Address"],
+        "summary": "Claim reserved address",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "addressID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Address claimed successfully"
+          },
+          "404": {
+            "description": "Address not found"
+          },
+          "409": {
+            "description": "Address already claimed"
+          }
+        }
+      }
+    },
+    "/v1/mail/session": {
+      "post": {
+        "tags": ["Mail Account Provisioning"],
+        "summary": "Create mail session",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Mail session created"
+          },
+          "503": {
+            "description": "Mailbox not ready"
+          }
+        }
+      }
+    },
+    "/v1/mail/account": {
+      "get": {
+        "tags": ["Mail Account Provisioning"],
+        "summary": "Get mail account details",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Account details"
+          }
+        }
+      }
+    },
+    "/v1/mail/provisioning-status": {
+      "get": {
+        "tags": ["Mail Account Provisioning"],
+        "summary": "Get provisioning status",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Provisioning status"
+          }
+        }
+      }
+    },
+    "/v1/mail/mailboxes": {
+      "get": {
+        "tags": ["Mailbox"],
+        "summary": "List mailboxes",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "List of mailboxes"
+          }
+        }
+      }
+    },
+    "/v1/mail/mailboxes/{id}": {
+      "get": {
+        "tags": ["Mailbox"],
+        "summary": "Get mailbox details",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mailbox details"
+          },
+          "404": {
+            "description": "Mailbox not found"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "List messages",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "text",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "thread_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "has_attachment",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of messages"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Get message details",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message details"
+          },
+          "404": {
+            "description": "Message not found"
+          }
+        }
+      }
+    },
+    "/v1/mail/search": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Search messages",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mailbox",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "has_attachment",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results"
+          }
+        }
+      }
+    },
+    "/v1/mail/sync": {
+      "post": {
+        "tags": ["Messages"],
+        "summary": "Incremental sync",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Sync results"
+          },
+          "409": {
+            "description": "Resync required"
+          }
+        }
+      }
+    },
+    "/v1/mail/attachments": {
+      "post": {
+        "tags": ["Attachments"],
+        "summary": "Upload attachment",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attachment uploaded"
+          },
+          "413": {
+            "description": "Attachment too large"
+          }
+        }
+      }
+    },
+    "/v1/mail/attachments/{blob_id}": {
+      "get": {
+        "tags": ["Attachments"],
+        "summary": "Download attachment",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "blob_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachment file",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Attachment not found"
+          }
+        }
+      }
+    },
+    "/v1/mail/drafts": {
+      "post": {
+        "tags": ["Drafts"],
+        "summary": "Create draft",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "subject"],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bcc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "text_body": {
+                    "type": "string"
+                  },
+                  "html_body": {
+                    "type": "string"
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Draft created"
+          }
+        }
+      }
+    },
+    "/v1/mail/drafts/{id}": {
+      "get": {
+        "tags": ["Drafts"],
+        "summary": "Get draft",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Draft details"
+          },
+          "404": {
+            "description": "Draft not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Drafts"],
+        "summary": "Update draft",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "text_body": {
+                    "type": "string"
+                  },
+                  "html_body": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Draft updated"
+          },
+          "404": {
+            "description": "Draft not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Drafts"],
+        "summary": "Delete draft",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Draft deleted"
+          },
+          "404": {
+            "description": "Draft not found"
+          }
+        }
+      }
+    },
+    "/v1/mail/send": {
+      "post": {
+        "tags": ["Send"],
+        "summary": "Send message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "subject"],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bcc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "text_body": {
+                    "type": "string"
+                  },
+                  "html_body": {
+                    "type": "string"
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent"
+          },
+          "202": {
+            "description": "Delivery status unknown"
+          },
+          "400": {
+            "description": "Invalid request or missing idempotency key"
+          },
+          "409": {
+            "description": "Duplicate send or idempotency in progress"
+          }
+        }
+      }
+    },
+    "/v1/mail/threads": {
+      "get": {
+        "tags": ["Threads"],
+        "summary": "List threads",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "mailbox_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of threads"
+          }
+        }
+      }
+    },
+    "/v1/mail/threads/{id}": {
+      "get": {
+        "tags": ["Threads"],
+        "summary": "Get thread details",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thread details"
+          },
+          "404": {
+            "description": "Thread not found"
+          }
+        }
+      }
+    },
+    "/v1/mail/threads/{id}/messages": {
+      "get": {
+        "tags": ["Threads"],
+        "summary": "Get thread messages",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thread messages"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/reply": {
+      "post": {
+        "tags": ["Threads"],
+        "summary": "Reply to message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "subject"],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "text_body": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reply sent"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/reply-all": {
+      "post": {
+        "tags": ["Threads"],
+        "summary": "Reply all to message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "subject"],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "cc": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "text_body": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reply all sent"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/forward": {
+      "post": {
+        "tags": ["Threads"],
+        "summary": "Forward message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "subject"],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "text_body": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message forwarded"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/read": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Mark message as read",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message marked as read"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/unread": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Mark message as unread",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message marked as unread"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/star": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Star message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message starred"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/unstar": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Unstar message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message unstarred"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/archive": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Archive message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message archived"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/move": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Move message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["mailbox_id"],
+                "properties": {
+                  "mailbox_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message moved"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/trash": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Move message to trash",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message moved to trash"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/restore": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Restore message",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message restored"
+          }
+        }
+      }
+    },
+    "/v1/mail/messages/{id}/spam": {
+      "post": {
+        "tags": ["Message Actions"],
+        "summary": "Mark message as spam",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message marked as spam"
+          }
+        }
+      }
+    },
+    "/v1/mail/realtime": {
+      "get": {
+        "tags": ["Realtime"],
+        "summary": "WebSocket connection for real-time updates",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "101": {
+            "description": "WebSocket connection established"
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "tags": ["Account Management"],
+        "summary": "Get account usage",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Account usage details"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Health & Monitoring"],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": ["Health & Monitoring"],
+        "summary": "Liveness probe",
+        "responses": {
+          "200": {
+            "description": "Service is alive"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": ["Health & Monitoring"],
+        "summary": "Readiness probe",
+        "responses": {
+          "200": {
+            "description": "Service is ready"
+          },
+          "503": {
+            "description": "Service is not ready"
+          }
+        }
+      }
+    },
+    "/health/db": {
+      "get": {
+        "tags": ["Health & Monitoring"],
+        "summary": "Database health check",
+        "responses": {
+          "200": {
+            "description": "Database is healthy"
+          },
+          "503": {
+            "description": "Database is unhealthy"
+          }
+        }
+      }
+    },
+    "/health/stalwart": {
+      "get": {
+        "tags": ["Health & Monitoring"],
+        "summary": "Stalwart health check",
+        "responses": {
+          "200": {
+            "description": "Stalwart is healthy"
+          },
+          "503": {
+            "description": "Stalwart is unhealthy"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": ["Health & Monitoring"],
+        "summary": "Metrics endpoint",
+        "responses": {
+          "200": {
+            "description": "Metrics data"
+          }
+        }
+      }
+    }
+  }
+}

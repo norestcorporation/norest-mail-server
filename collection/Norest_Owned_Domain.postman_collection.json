@@ -1,0 +1,1484 @@
+{
+  "info": {
+    "name": "Norest_Owned_Domain",
+    "description": "Complete API collection for Norest Mail Platform Domain flow with automation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "domain_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "domain_name",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "email_address",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reservation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "account_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mail_account_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "provisioning_status",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mailbox_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inbox_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sent_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "drafts_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trash_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "spam_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "message_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "thread_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "draft_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "attachment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sync_state",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idempotency_key",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "register"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.access_token) {",
+                  "        pm.environment.set('access_token', jsonData.access_token);",
+                  "    }",
+                  "    if (jsonData.user && jsonData.user.id) {",
+                  "        pm.environment.set('account_id', jsonData.user.id);",
+                  "    }",
+                  "    if (jsonData.user && jsonData.user.email) {",
+                  "        pm.environment.set('email', jsonData.user.email);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "login"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.access_token) {",
+                  "        pm.environment.set('access_token', jsonData.access_token);",
+                  "    }",
+                  "    if (jsonData.user && jsonData.user.id) {",
+                  "        pm.environment.set('account_id', jsonData.user.id);",
+                  "    }",
+                  "    if (jsonData.user && jsonData.user.email) {",
+                  "        pm.environment.set('email', jsonData.user.email);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/me",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "me"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set('account_id', jsonData.id);",
+                  "    }",
+                  "    if (jsonData.email) {",
+                  "        pm.environment.set('email', jsonData.email);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02. Platform Domain",
+      "item": [
+        {
+          "name": "List Available Domains",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/domains/platform",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "domains", "platform"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.environment.set('domain_id', jsonData[0].id);",
+                  "        pm.environment.set('domain_name', jsonData[0].name);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Domain",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/domains/{{domain_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "domains", "{{domain_id}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set('domain_id', jsonData.id);",
+                  "    }",
+                  "    if (jsonData.name) {",
+                  "        pm.environment.set('domain_name', jsonData.name);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check Domain Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/domains/check/{{domain_name}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "domains", "check", "{{domain_name}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03. Email Address",
+      "item": [
+        {
+          "name": "Check Username Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/domains/{{domain_id}}/addresses/check/{{username}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "domains", "{{domain_id}}", "addresses", "check", "{{username}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve Email Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"local_part\": \"{{username}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/domains/{{domain_id}}/addresses/reserve",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "domains", "{{domain_id}}", "addresses", "reserve"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set('reservation_id', jsonData.id);",
+                  "    }",
+                  "    if (jsonData.email) {",
+                  "        pm.environment.set('email_address', jsonData.email);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Reservation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/domains/{{domain_id}}/addresses",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "domains", "{{domain_id}}", "addresses"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+                  "        pm.environment.set('reservation_id', jsonData[0].id);",
+                  "        if (jsonData[0].email) {",
+                  "            pm.environment.set('email_address', jsonData[0].email);",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Claim Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/addresses/{{reservation_id}}/claim",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "addresses", "{{reservation_id}}", "claim"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04. Mail Account Provisioning",
+      "item": [
+        {
+          "name": "Create Mail Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/session",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "session"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.account_id) {",
+                  "        pm.environment.set('mail_account_id', jsonData.account_id);",
+                  "    }",
+                  "    if (jsonData.session_token) {",
+                  "        pm.environment.set('session_token', jsonData.session_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/account",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "account"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set('mailbox_id', jsonData.id);",
+                  "    }",
+                  "    if (jsonData.stalwart_account_id) {",
+                  "        pm.environment.set('mail_account_id', jsonData.stalwart_account_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Provisioning Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/provisioning-status",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "provisioning-status"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.status) {",
+                  "        pm.environment.set('provisioning_status', jsonData.status);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05. Mailbox",
+      "item": [
+        {
+          "name": "List Mailboxes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/mailboxes",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "mailboxes"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data && Array.isArray(jsonData.data)) {",
+                  "        jsonData.data.forEach(mailbox => {",
+                  "            if (mailbox.role === 'inbox') {",
+                  "                pm.environment.set('inbox_id', mailbox.id);",
+                  "            } else if (mailbox.role === 'sent') {",
+                  "                pm.environment.set('sent_id', mailbox.id);",
+                  "            } else if (mailbox.role === 'drafts') {",
+                  "                pm.environment.set('drafts_id', mailbox.id);",
+                  "            } else if (mailbox.role === 'trash') {",
+                  "                pm.environment.set('trash_id', mailbox.id);",
+                  "            } else if (mailbox.role === 'spam') {",
+                  "                pm.environment.set('spam_id', mailbox.id);",
+                  "            }",
+                  "        });",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Mailbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/mailboxes/{{mailbox_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "mailboxes", "{{mailbox_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06. Messages",
+      "item": [
+        {
+          "name": "List Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages?mailbox_id={{inbox_id}}&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages"],
+              "query": [
+                {
+                  "key": "mailbox_id",
+                  "value": "{{inbox_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data && Array.isArray(jsonData.data) && jsonData.data.length > 0) {",
+                  "        pm.environment.set('message_id', jsonData.data[0].id);",
+                  "        if (jsonData.data[0].thread_id) {",
+                  "            pm.environment.set('thread_id', jsonData.data[0].thread_id);",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/search?query=search_term",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "search_term"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Incremental Sync",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/sync",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "sync"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.sync_state) {",
+                  "        pm.environment.set('sync_state', jsonData.sync_state);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07. Attachments",
+      "item": [
+        {
+          "name": "Upload Attachment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/octet-stream"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {}
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/attachments",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "attachments"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.blob_id) {",
+                  "        pm.environment.set('attachment_id', jsonData.blob_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Download Attachment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/attachments/{{attachment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "attachments", "{{attachment_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08. Drafts",
+      "item": [
+        {
+          "name": "Create Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{email_address}}\",\n  \"to\": [\"recipient@example.com\"],\n  \"subject\": \"Draft Subject\",\n  \"text_body\": \"Draft content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/drafts",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "drafts"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.environment.set('draft_id', jsonData.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Draft",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/drafts/{{draft_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "drafts", "{{draft_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Draft",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{email_address}}\",\n  \"to\": [\"recipient@example.com\"],\n  \"subject\": \"Updated Subject\",\n  \"text_body\": \"Updated content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/drafts/{{draft_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "drafts", "{{draft_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Draft",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/drafts/{{draft_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "drafts", "{{draft_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09. Send",
+      "item": [
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": [\n    {\n      \"email\": \"recipient@example.com\"\n    }\n  ],\n  \"subject\": \"Test Email\",\n  \"text_body\": \"This is a test email\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/send",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "send"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const idempotencyKey = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);",
+                  "pm.environment.set('idempotency_key', idempotencyKey);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Threads",
+      "item": [
+        {
+          "name": "List Threads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/threads?mailbox_id={{inbox_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "threads"],
+              "query": [
+                {
+                  "key": "mailbox_id",
+                  "value": "{{inbox_id}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data && Array.isArray(jsonData.data) && jsonData.data.length > 0) {",
+                  "        pm.environment.set('thread_id', jsonData.data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Thread",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/threads/{{thread_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "threads", "{{thread_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Thread Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/threads/{{thread_id}}/messages",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "threads", "{{thread_id}}", "messages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{email_address}}\",\n  \"to\": [\"recipient@example.com\"],\n  \"subject\": \"Re: Original Subject\",\n  \"text_body\": \"Reply content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/reply",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "reply"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reply All",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{email_address}}\",\n  \"to\": [\"recipient@example.com\"],\n  \"cc\": [\"cc@example.com\"],\n  \"subject\": \"Re: Original Subject\",\n  \"text_body\": \"Reply all content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/reply-all",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "reply-all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forward",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{email_address}}\",\n  \"to\": [\"forward@example.com\"],\n  \"subject\": \"Fwd: Original Subject\",\n  \"text_body\": \"Forwarded content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/forward",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "forward"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Message Actions",
+      "item": [
+        {
+          "name": "Mark Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/read",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "read"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Unread",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/unread",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "unread"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Star",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/star",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "star"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unstar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/unstar",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "unstar"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Archive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/archive",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "archive"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Move",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mailbox_id\": \"{{mailbox_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/move",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "move"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trash",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/trash",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "trash"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Restore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/restore",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "restore"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Spam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/spam",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "mail", "messages", "{{message_id}}", "spam"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12. Realtime",
+      "item": [
+        {
+          "name": "Connect WebSocket",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "ws://localhost:8080/v1/mail/realtime",
+              "protocol": "ws",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["v1", "mail", "realtime"]
+            },
+            "description": "WebSocket connection for real-time updates"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13. Account Management",
+      "item": [
+        {
+          "name": "Get Usage",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/account/usage",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "account", "usage"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "14. Health & Monitoring",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/live",
+              "host": ["{{base_url}}"],
+              "path": ["health", "live"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/ready",
+              "host": ["{{base_url}}"],
+              "path": ["health", "ready"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Database Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/db",
+              "host": ["{{base_url}}"],
+              "path": ["health", "db"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stalwart Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/stalwart",
+              "host": ["{{base_url}}"],
+              "path": ["health", "stalwart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["metrics"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
