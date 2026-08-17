@@ -95,7 +95,7 @@ func main() {
 			req.Header.Set("Content-Type", "application/json")
 			resp, _ := http.DefaultClient.Do(req)
 			if resp != nil {
-				defer resp.Body.Close()
+
 				if resp.StatusCode == 201 {
 					atomic.AddInt32(&successCount, 1)
 				} else if resp.StatusCode == 409 {
@@ -157,7 +157,7 @@ func main() {
 
 	// We reset the password so we can test it directly
 	fmt.Println("\n[10 & 11] Authenticating directly to Stalwart JMAP as the mailbox...")
-	
+
 	// First, get the local part for authentication
 	var localPart string
 	err = pool.QueryRow(context.Background(), "SELECT a.local_part FROM addresses a JOIN mailboxes m ON a.id = m.address_id WHERE m.id = $1", mbID).Scan(&localPart)
@@ -165,7 +165,7 @@ func main() {
 		fmt.Printf("❌ Failed to get local part: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	updateRes := jmapAdminCall([]any{
 		[]any{"x:Account/set", map[string]any{
 			"update": map[string]any{
@@ -180,7 +180,7 @@ func main() {
 			},
 		}, "0"},
 	})
-	
+
 	if notUpdated, ok := extractMethodResponse(updateRes, "x:Account/set"); ok {
 		fmt.Printf("Admin update response: %v\n", notUpdated)
 		// Check if the update succeeded (either updated field exists or notUpdated is empty/nil)
@@ -209,7 +209,7 @@ func main() {
 		fmt.Println("============================================")
 		return
 	}
-	
+
 	aliceAccountId := session.PrimaryAccounts["urn:ietf:params:jmap:mail"]
 	fmt.Printf("✓ Authenticated directly via JMAP. Session Account ID: %s\n", aliceAccountId)
 
@@ -261,8 +261,8 @@ func postJSON(url string, data map[string]string, token string) map[string]any {
 		fmt.Printf("Request failed: %v\n", err)
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
-	
+
+
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
 		fmt.Printf("Request failed with status %d: %s\n", resp.StatusCode, string(body))
@@ -302,7 +302,7 @@ func getSessionWithRetry(username, password string) (*Session, error) {
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
@@ -327,8 +327,13 @@ func jmapAdminCall(methodCalls []any) map[string]any {
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth("admin", "change-me-development-only")
 
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("HTTP request error: %v\n", err)
+		return nil
+	}
 	defer resp.Body.Close()
+
 	var result map[string]any
 	json.NewDecoder(resp.Body).Decode(&result)
 	return result
@@ -345,8 +350,13 @@ func jmapCall(username, password string, methodCalls []any) map[string]any {
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(username, password)
 
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("HTTP request error: %v\n", err)
+		return nil
+	}
 	defer resp.Body.Close()
+
 	var result map[string]any
 	json.NewDecoder(resp.Body).Decode(&result)
 	return result

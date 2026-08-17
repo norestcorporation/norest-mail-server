@@ -12,6 +12,7 @@ import (
 	"github.com/norest-mail/server/internal/config"
 	"github.com/norest-mail/server/internal/db"
 	httpserver "github.com/norest-mail/server/internal/http"
+	"github.com/norest-mail/server/internal/realtime"
 	"github.com/norest-mail/server/internal/stalwart"
 )
 
@@ -53,8 +54,12 @@ func main() {
 		cfg.StalwartAdminPassword,
 	)
 
+	// Create and start Realtime Broker
+	wsBroker := realtime.NewBroker(pool)
+	go wsBroker.Start(ctx)
+
 	// Create HTTP router
-	router := httpserver.NewRouter(cfg, pool, stalwartClient)
+	router := httpserver.NewRouter(cfg, pool, stalwartClient, wsBroker)
 
 	// Create HTTP server with hardening
 	srv := &http.Server{

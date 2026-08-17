@@ -17,13 +17,14 @@ import (
 	"github.com/norest-mail/server/internal/metrics"
 	"github.com/norest-mail/server/internal/policy"
 	"github.com/norest-mail/server/internal/ratelimit"
+	"github.com/norest-mail/server/internal/realtime"
 	"github.com/norest-mail/server/internal/registration"
 	"github.com/norest-mail/server/internal/response"
 	"github.com/norest-mail/server/internal/stalwart"
 )
 
 // NewRouter creates the application router with all routes mounted.
-func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.Client) http.Handler {
+func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.Client, wsBroker *realtime.Broker) http.Handler {
 	r := chi.NewRouter()
 
 	// Rate limiters
@@ -83,9 +84,10 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 	billingHandler := billing.NewHandler(billingService)
 
 	dbImpl := db.NewMailRepository(pool)
+	idemImpl := db.NewIdempotencyRepository(pool)
 	// We assume Stalwart is accessible at localhost:8081 for the JMAP frontend (per Ch3 dev URL rules)
-	mailService := mail.NewService(dbImpl, stalwartClient)
-	mailHandler := mail.NewHandler(mailService, "http://localhost:8081")
+	mailService := mail.NewService(dbImpl, stalwartClient, pool)
+	mailHandler := mail.NewHandler(mailService, idemImpl, "http://localhost:8081")
 
 	// API v1 — prepared for Chapter 2
 	r.Route("/v1", func(r chi.Router) {
@@ -124,7 +126,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 					r.Get("/", addressesHandler.List)
 					r.Get("/check/{localPart}", addressesHandler.CheckAvailability)
 				})
-				
+
 				// Address operations
 				r.Route("/addresses", func(r chi.Router) {
 					r.Post("/{addressID}/claim", addressesHandler.Claim)
@@ -133,9 +135,59 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 
 			// Mail Layer
 			r.Route("/mail", func(r chi.Router) {
+				// Existing
 				r.With(mailSessionLimiter.Middleware(ratelimit.UserKey)).Post("/session", mailHandler.CreateSession)
 				r.Get("/account", mailHandler.GetAccount)
 				r.Get("/provisioning-status", mailHandler.GetProvisioningStatus)
+
+				// Realtime
+				r.Get("/realtime", realtime.Handler(wsBroker))
+
+				// Attachments
+				r.With(RequestSizeLimit(25<<20)).Post("/attachments", mailHandler.UploadAttachment)
+				r.Get("/attachments/{blob_id}", mailHandler.DownloadAttachment)
+
+				// Threads
+				r.Get("/threads", mailHandler.ListThreads)
+				r.Get("/threads/{id}", mailHandler.GetThread)
+				r.Get("/threads/{id}/messages", mailHandler.GetThreadMessages)
+
+				// Mailboxes
+				r.Get("/mailboxes", mailHandler.ListMailboxes)
+				r.Get("/mailboxes/{id}", mailHandler.GetMailbox)
+
+				// Messages
+				r.Get("/search", mailHandler.SearchMessages)
+				r.Get("/messages", mailHandler.ListMessages)
+				r.Get("/messages/{id}", mailHandler.GetMessage)
+
+				// Message Actions
+				r.Post("/messages/{id}/read", mailHandler.MarkRead)
+				r.Post("/messages/{id}/unread", mailHandler.MarkUnread)
+				r.Post("/messages/{id}/star", mailHandler.StarMessage)
+				r.Post("/messages/{id}/unstar", mailHandler.UnstarMessage)
+				r.Post("/messages/{id}/archive", mailHandler.ArchiveMessage)
+				r.Post("/messages/{id}/move", mailHandler.MoveMessage)
+				r.Post("/messages/{id}/trash", mailHandler.TrashMessage)
+				r.Post("/messages/{id}/restore", mailHandler.RestoreMessage)
+				r.Post("/messages/{id}/spam", mailHandler.SpamMessage)
+
+				// Replies and Forwarding
+				r.Post("/messages/{id}/reply", mailHandler.ReplyMessage)
+				r.Post("/messages/{id}/reply-all", mailHandler.ReplyAllMessage)
+				r.Post("/messages/{id}/forward", mailHandler.ForwardMessage)
+
+				// Drafts
+				r.Post("/drafts", mailHandler.CreateDraft)
+				r.Get("/drafts/{id}", mailHandler.GetDraft)
+				r.Put("/drafts/{id}", mailHandler.UpdateDraft)
+				r.Delete("/drafts/{id}", mailHandler.DeleteDraft)
+
+				// Sync
+				r.Post("/sync", mailHandler.SyncMail)
+
+				// Send
+				r.Post("/send", mailHandler.SendMessage)
 			})
 
 			// Product Layer
@@ -181,23 +233,23 @@ func handleHealthLive() http.HandlerFunc {
 func handleHealthReady(pool *pgxpool.Pool, stalwartClient *stalwart.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		
+
 		// Readiness: can serve expected traffic
 		// Check database
 		if err := db.HealthCheck(ctx, pool); err != nil {
 			response.ServiceError(w, http.StatusServiceUnavailable, "not_ready", "database unhealthy")
 			return
 		}
-		
+
 		// Check Stalwart with timeout
 		healthCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
-		
+
 		if err := stalwartClient.HealthCheck(healthCtx); err != nil {
 			response.ServiceError(w, http.StatusServiceUnavailable, "not_ready", "stalwart unhealthy")
 			return
 		}
-		
+
 		response.OK(w, map[string]string{"status": "ready"})
 	}
 }

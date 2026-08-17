@@ -1,11 +1,8 @@
 package stalwart
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 )
 
 // Mailbox represents a JMAP Mailbox object (RFC 8621).
@@ -72,58 +69,49 @@ func (c *Client) MailboxGet(ctx context.Context, accountID string, ids []string)
 		[]any{"Mailbox/get", args, "mg0"},
 	}
 
-	request := map[string]any{
-		"using": []string{
-			"urn:ietf:params:jmap:core",
-			"urn:ietf:params:jmap:mail",
-		},
-		"methodCalls": methodCalls,
-	}
-
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling Mailbox/get request: %w", err)
-	}
-
-	url := c.BaseURL + "/jmap"
-	resp, err := c.doRequest(ctx, http.MethodPost, url, bytes.NewReader(body), "application/json")
-	if err != nil {
-		return nil, fmt.Errorf("Mailbox/get request: %w", err)
-	}
-
-	data, err := readAndClose(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Mailbox/get returned status %d: %s", resp.StatusCode, string(data))
-	}
-
-	var jmapResp struct {
-		MethodResponses []json.RawMessage `json:"methodResponses"`
-	}
-	if err := parseJSON(data, &jmapResp); err != nil {
-		return nil, err
-	}
-
-	if len(jmapResp.MethodResponses) == 0 {
-		return nil, fmt.Errorf("no method responses in Mailbox/get")
-	}
-
-	// JMAP method responses are arrays: [methodName, responseObject, callId]
-	var methodResp []json.RawMessage
-	if err := json.Unmarshal(jmapResp.MethodResponses[0], &methodResp); err != nil {
-		return nil, fmt.Errorf("parsing method response: %w", err)
-	}
-
-	if len(methodResp) < 2 {
-		return nil, fmt.Errorf("invalid method response format")
-	}
-
 	var result MailboxGetResponse
-	if err := json.Unmarshal(methodResp[1], &result); err != nil {
-		return nil, fmt.Errorf("parsing Mailbox/get response: %w", err)
+	if err := c.callJMAPFirst(ctx, jmapMailUsing, methodCalls, &result); err != nil {
+		return nil, fmt.Errorf("Mailbox/get: %w", err)
+	}
+
+	return &result, nil
+}
+
+// MailboxSetResponse represents the response to a Mailbox/set JMAP call.
+type MailboxSetResponse struct {
+	AccountID  string                       `json:"accountId"`
+	OldState   string                       `json:"oldState"`
+	NewState   string                       `json:"newState"`
+	Created    map[string]Mailbox           `json:"created"`
+	Updated    map[string]any               `json:"updated"`
+	Destroyed  []string                     `json:"destroyed"`
+	NotCreated map[string]EmailSetError     `json:"notCreated"`
+	NotUpdated map[string]EmailSetError     `json:"notUpdated"`
+	NotDestroyed map[string]EmailSetError   `json:"notDestroyed"`
+}
+
+// MailboxSet creates, updates, or destroys mailboxes for the given account.
+func (c *Client) MailboxSet(ctx context.Context, accountID string, create map[string]any, update map[string]any, destroy []string) (*MailboxSetResponse, error) {
+	args := map[string]any{
+		"accountId": accountID,
+	}
+	if create != nil {
+		args["create"] = create
+	}
+	if update != nil {
+		args["update"] = update
+	}
+	if destroy != nil {
+		args["destroy"] = destroy
+	}
+
+	methodCalls := []any{
+		[]any{"Mailbox/set", args, "ms0"},
+	}
+
+	var result MailboxSetResponse
+	if err := c.callJMAPFirst(ctx, jmapMailUsing, methodCalls, &result); err != nil {
+		return nil, fmt.Errorf("Mailbox/set: %w", err)
 	}
 
 	return &result, nil

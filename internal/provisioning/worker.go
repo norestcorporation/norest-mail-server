@@ -704,11 +704,31 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 		slog.Warn("failed to update job checkpoint", "error", err, "job_id", job.ID)
 	}
 
-	// 9. Discover and persist mailbox mappings
+	// 9. Discover mailboxes
 	slog.Info("discovering mailbox mappings", "job_id", job.ID, "account_id", stalwartAccountIDStr)
 	mailboxMappings, err := w.stalwartClient.DiscoverMailboxes(ctx, stalwartAccountIDStr)
 	if err != nil {
 		return fmt.Errorf("failed to discover mailboxes: %w", err)
+	}
+
+	// 9.5 Ensure Archive mailbox exists
+	if _, hasArchive := mailboxMappings["archive"]; !hasArchive {
+		slog.Info("archive mailbox missing, creating it", "job_id", job.ID)
+		createObj := map[string]any{
+			"arch0": map[string]any{
+				"name": "Archive",
+				"role": "archive",
+			},
+		}
+		setResp, err := w.stalwartClient.MailboxSet(ctx, stalwartAccountIDStr, createObj, nil, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create archive mailbox: %w", err)
+		}
+		if created, ok := setResp.Created["arch0"]; ok {
+			mailboxMappings["archive"] = created.ID
+		} else {
+			return fmt.Errorf("archive mailbox was not created successfully")
+		}
 	}
 
 	// Persist mailbox mappings

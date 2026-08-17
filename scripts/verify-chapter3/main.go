@@ -238,7 +238,7 @@ func register(email, password string) string {
 		fmt.Printf("Register error: %v\n", err)
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
+
 	var res map[string]any
 	json.NewDecoder(resp.Body).Decode(&res)
 	return res["access_token"].(string)
@@ -249,8 +249,13 @@ func createDomain(token, domain string) string {
 	req, _ := http.NewRequest("POST", NorestAPIURL+"/domains", bytes.NewReader(b))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("HTTP request error: %v\n", err)
+		return ""
+	}
 	defer resp.Body.Close()
+
 	var res map[string]any
 	json.NewDecoder(resp.Body).Decode(&res)
 	return res["id"].(string)
@@ -280,7 +285,11 @@ func createAddress(token, domainID, localPart string) {
 	req, _ := http.NewRequest("POST", NorestAPIURL+"/domains/"+domainID+"/addresses", bytes.NewReader(b))
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("HTTP request error: %v\n", err)
+		return
+	}
 	defer resp.Body.Close()
 }
 
@@ -316,7 +325,7 @@ func getSession(token string) (string, string, string) {
 		}
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
+
 	var res map[string]any
 	json.NewDecoder(resp.Body).Decode(&res)
 
@@ -358,7 +367,7 @@ func jmapCall(url, email, token string, methodCalls []any) map[string]any {
 		fmt.Printf("Error making JMAP call: %v\n", err)
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
+
 
 	var result map[string]any
 	json.NewDecoder(resp.Body).Decode(&result)

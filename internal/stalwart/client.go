@@ -33,11 +33,7 @@ func NewClient(baseURL, username, password string) *Client {
 
 // doRequest executes an HTTP request with basic auth and proper cleanup.
 func (c *Client) doRequest(ctx context.Context, method, url string, body io.Reader, contentType string) (*http.Response, error) {
-	// Use a per-request timeout for safety
-	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	
-	req, err := http.NewRequestWithContext(reqCtx, method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
