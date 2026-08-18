@@ -2,10 +2,12 @@ package mail
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/norest-mail/server/internal/stalwart"
@@ -30,6 +32,43 @@ type DB interface {
 	GetMailboxMappingByRole(ctx context.Context, mailboxID, role string) (string, error)
 	GetSyncState(ctx context.Context, mailboxID string) (*SyncState, error)
 	UpdateSyncState(ctx context.Context, mailboxID, state, status, errMsg string) error
+
+	// Threading
+	ListThreads(ctx context.Context, accountID, mailboxID string, limit int, cursorTime *time.Time, cursorID string) ([]ThreadData, error)
+	GetThreadAccountScoped(ctx context.Context, accountID, threadID string) (*ThreadData, error)
+	GetMessagesByThread(ctx context.Context, accountID, threadID string) ([]MessageData, error)
+}
+
+// ThreadData represents the Norest-owned thread projection returned by the DB.
+type ThreadData struct {
+	ID            string
+	AccountID     string
+	Subject       string
+	Participants  []byte
+	MessageCount  int
+	UnreadCount   int
+	Snippet       *string
+	LastMessageAt time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+// MessageData represents the Norest-owned message projection returned by the DB.
+type MessageData struct {
+	ID              string
+	AccountID       string
+	ThreadID        string
+	StalwartEmailID string
+	MessageID       *string
+	InReplyTo       *string
+	ReferencesChain []string
+	Subject         *string
+	Sender          []byte
+	Recipients      []byte
+	ReceivedAt      *time.Time
+	SentAt          *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // SyncState represents the incremental sync state of a mailbox.
@@ -375,7 +414,7 @@ func (s *Service) CreateDraft(ctx context.Context, userID string, req DraftReque
 	// Build the JMAP Email object for creation
 	createObj := map[string]any{
 		"mailboxIds": map[string]bool{draftsMailboxID: true},
-		"keywords":   map[string]bool{"$draft": true},
+		"keywords":   map[string]bool{"$draft": true, "$seen": true},
 		"from":       []stalwart.EmailAddress{{Email: address}},
 	}
 
@@ -399,6 +438,16 @@ func (s *Service) CreateDraft(ctx context.Context, userID string, req DraftReque
 	}
 	if len(req.Attachments) > 0 {
 		createObj["attachments"] = buildAttachments(req.Attachments)
+	}
+	if len(req.AttachmentIDs) > 0 {
+		// Convert attachment IDs to attachment format
+		attachments := make([]map[string]any, len(req.AttachmentIDs))
+		for i, id := range req.AttachmentIDs {
+			attachments[i] = map[string]any{
+				"blobId": id,
+			}
+		}
+		createObj["attachments"] = attachments
 	}
 
 	// Build body
@@ -449,28 +498,73 @@ func (s *Service) CreateDraft(ctx context.Context, userID string, req DraftReque
 		slog.Error("failed to mark success in reconciliation", "error", markErr, "recon_id", reconID)
 	}
 
+	// Get the created draft with full details to return complete response
+	createdDraft, err := s.stalwart.EmailGetWithBody(ctx, acct.StalwartAccountID, []string{created.ID})
+	if err != nil {
+		slog.Error("failed to fetch created draft details", "error", err)
+		// Still return success even if we can't fetch details
+		return &DraftResponse{
+			ID:      created.ID,
+			BlobID:  created.BlobID,
+			Message: "draft created",
+		}, nil
+	}
+
+	draftMsg := emailToMessageResponse(createdDraft.List[0])
+
 	return &DraftResponse{
-		ID:      created.ID,
-		BlobID:  created.BlobID,
-		Message: "draft created",
+		ID:       created.ID,
+		BlobID:   created.BlobID,
+		Message:  "draft created",
+		To:       draftMsg.To,
+		CC:       draftMsg.CC,
+		BCC:      draftMsg.BCC,
+		Subject:  draftMsg.Subject,
+		TextBody: draftMsg.TextBody,
+		HTMLBody: draftMsg.HTMLBody,
+		AttachmentIDs: func() []string {
+			ids := make([]string, len(draftMsg.Attachments))
+			for i, att := range draftMsg.Attachments {
+				ids[i] = att.BlobID
+			}
+			return ids
+		}(),
+		CreatedAt: draftMsg.SentAt,
+		UpdatedAt: draftMsg.SentAt,
 	}, nil
 }
 
 // GetDraft returns a draft by ID. Validates that it's in the Drafts mailbox.
-func (s *Service) GetDraft(ctx context.Context, userID, draftID string) (*MessageResponse, error) {
+func (s *Service) GetDraft(ctx context.Context, userID, draftID string) (*DraftResponse, error) {
 	msg, err := s.GetMessage(ctx, userID, draftID)
 	if err != nil {
-		if msg == nil {
-			return nil, ErrDraftNotFound
-		}
-		return nil, err
+		return nil, ErrDraftNotFound
 	}
 
 	if !msg.IsDraft {
 		return nil, ErrDraftNotFound
 	}
 
-	return msg, nil
+	// Convert MessageResponse to DraftResponse
+	attachmentIDs := make([]string, len(msg.Attachments))
+	for i, att := range msg.Attachments {
+		attachmentIDs[i] = att.BlobID
+	}
+
+	return &DraftResponse{
+		ID:            msg.ID,
+		BlobID:        "", // Not available in MessageResponse
+		Message:       "draft retrieved",
+		To:            msg.To,
+		CC:            msg.CC,
+		BCC:           msg.BCC,
+		Subject:       msg.Subject,
+		TextBody:      msg.TextBody,
+		HTMLBody:      msg.HTMLBody,
+		AttachmentIDs: attachmentIDs,
+		CreatedAt:     msg.SentAt,
+		UpdatedAt:     msg.ReceivedAt,
+	}, nil
 }
 
 // UpdateDraft updates an existing draft. This creates a new JMAP Email and destroys the old one.
@@ -504,7 +598,7 @@ func (s *Service) UpdateDraft(ctx context.Context, userID, draftID string, req D
 	// Build the updated email object — merge existing with new values
 	createObj := map[string]any{
 		"mailboxIds": map[string]bool{draftsMailboxID: true},
-		"keywords":   map[string]bool{"$draft": true},
+		"keywords":   map[string]bool{"$draft": true, "$seen": true},
 		"from":       oldEmail.From,
 	}
 
@@ -541,6 +635,15 @@ func (s *Service) UpdateDraft(ctx context.Context, userID, draftID string, req D
 	}
 	if len(req.Attachments) > 0 {
 		createObj["attachments"] = buildAttachments(req.Attachments)
+	} else if len(req.AttachmentIDs) > 0 {
+		// Convert attachment IDs to attachment format
+		attachments := make([]map[string]any, len(req.AttachmentIDs))
+		for i, id := range req.AttachmentIDs {
+			attachments[i] = map[string]any{
+				"blobId": id,
+			}
+		}
+		createObj["attachments"] = attachments
 	} else if len(oldEmail.Attachments) > 0 {
 		createObj["attachments"] = oldEmail.Attachments
 	}
@@ -605,10 +708,39 @@ func (s *Service) UpdateDraft(ctx context.Context, userID, draftID string, req D
 		slog.Error("failed to mark success in reconciliation", "error", markErr, "recon_id", reconID)
 	}
 
+	// Get the updated draft with full details to return complete response
+	updatedDraft, err := s.stalwart.EmailGetWithBody(ctx, acct.StalwartAccountID, []string{created.ID})
+	if err != nil {
+		slog.Error("failed to fetch updated draft details", "error", err)
+		// Still return success even if we can't fetch details
+		return &DraftResponse{
+			ID:      created.ID,
+			BlobID:  created.BlobID,
+			Message: "draft updated",
+		}, nil
+	}
+
+	draftMsg := emailToMessageResponse(updatedDraft.List[0])
+
 	return &DraftResponse{
-		ID:      created.ID,
-		BlobID:  created.BlobID,
-		Message: "draft updated",
+		ID:       created.ID,
+		BlobID:   created.BlobID,
+		Message:  "draft updated",
+		To:       draftMsg.To,
+		CC:       draftMsg.CC,
+		BCC:      draftMsg.BCC,
+		Subject:  draftMsg.Subject,
+		TextBody: draftMsg.TextBody,
+		HTMLBody: draftMsg.HTMLBody,
+		AttachmentIDs: func() []string {
+			ids := make([]string, len(draftMsg.Attachments))
+			for i, att := range draftMsg.Attachments {
+				ids[i] = att.BlobID
+			}
+			return ids
+		}(),
+		CreatedAt: draftMsg.SentAt,
+		UpdatedAt: draftMsg.SentAt,
 	}, nil
 }
 
@@ -1265,55 +1397,63 @@ func (s *Service) ListThreads(ctx context.Context, userID string, opts ListMessa
 		return nil, err
 	}
 
-	filter := map[string]any{}
+	stMailboxID := ""
 	if opts.MailboxID != "" {
-		stID, err := s.resolveStalwartMailboxID(ctx, acct.MailboxID, opts.MailboxID)
+		stMailboxID, err = s.resolveStalwartMailboxID(ctx, acct.MailboxID, opts.MailboxID)
 		if err != nil {
 			return nil, err
 		}
-		filter["inMailbox"] = stID
 	}
-
-	// Construct JMAP Thread filter. Thread/query in JMAP does not support rich email filters directly,
-	// but RFC 8621 says we can filter by 'inMailbox'. For full search, one usually queries Email/query and maps to threads.
-	// We'll stick to basic thread query for now.
 
 	limit := opts.Limit
 	if limit <= 0 || limit > 100 {
 		limit = 50
 	}
 
-	resp, err := s.stalwart.ThreadQuery(ctx, acct.StalwartAccountID, filter, opts.Position, limit)
+	var cursorTime *time.Time
+	var cursorID string
+	if opts.Cursor != "" {
+		decoded, err := base64.StdEncoding.DecodeString(opts.Cursor)
+		if err == nil {
+			parts := strings.Split(string(decoded), "|")
+			if len(parts) == 2 {
+				t, err := time.Parse(time.RFC3339Nano, parts[0])
+				if err == nil {
+					cursorTime = &t
+					cursorID = parts[1]
+				}
+			}
+		}
+	}
+
+	dbThreads, err := s.db.ListThreads(ctx, acct.MailboxID, stMailboxID, limit, cursorTime, cursorID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrStalwartUnavailable, err)
+		return nil, fmt.Errorf("listing threads from db: %w", err)
 	}
 
-	if len(resp.IDs) == 0 {
-		return &ThreadListResponse{
-			Threads:  []ThreadResponse{},
-			Total:    resp.Total,
-			Position: resp.Position,
-		}, nil
-	}
+	threads := make([]ThreadResponse, 0, len(dbThreads))
+	var nextCursor string
 
-	// Fetch actual threads
-	getResp, err := s.stalwart.ThreadGet(ctx, acct.StalwartAccountID, resp.IDs)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrStalwartUnavailable, err)
-	}
-
-	threads := make([]ThreadResponse, 0, len(getResp.List))
-	for _, t := range getResp.List {
+	for i, t := range dbThreads {
 		threads = append(threads, ThreadResponse{
-			ID:       t.ID,
-			EmailIDs: t.EmailIDs,
+			ID:            t.ID,
+			Subject:       t.Subject,
+			Participants:  t.Participants,
+			MessageCount:  t.MessageCount,
+			UnreadCount:   t.UnreadCount,
+			Snippet:       t.Snippet,
+			LastMessageAt: t.LastMessageAt,
 		})
+
+		if i == len(dbThreads)-1 {
+			nextCursorStr := fmt.Sprintf("%s|%s", t.LastMessageAt.Format(time.RFC3339Nano), t.ID)
+			nextCursor = base64.StdEncoding.EncodeToString([]byte(nextCursorStr))
+		}
 	}
 
 	return &ThreadListResponse{
-		Threads:  threads,
-		Total:    resp.Total,
-		Position: resp.Position,
+		Threads:    threads,
+		NextCursor: nextCursor,
 	}, nil
 }
 
@@ -1324,19 +1464,19 @@ func (s *Service) GetThread(ctx context.Context, userID, threadID string) (*Thre
 		return nil, err
 	}
 
-	resp, err := s.stalwart.ThreadGet(ctx, acct.StalwartAccountID, []string{threadID})
+	t, err := s.db.GetThreadAccountScoped(ctx, acct.MailboxID, threadID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrStalwartUnavailable, err)
+		return nil, ErrMessageNotFound
 	}
 
-	if len(resp.List) == 0 {
-		return nil, ErrMessageNotFound // Map thread not found to message not found
-	}
-
-	t := resp.List[0]
 	return &ThreadResponse{
-		ID:       t.ID,
-		EmailIDs: t.EmailIDs,
+		ID:            t.ID,
+		Subject:       t.Subject,
+		Participants:  t.Participants,
+		MessageCount:  t.MessageCount,
+		UnreadCount:   t.UnreadCount,
+		Snippet:       t.Snippet,
+		LastMessageAt: t.LastMessageAt,
 	}, nil
 }
 
@@ -1347,33 +1487,53 @@ func (s *Service) GetThreadMessages(ctx context.Context, userID, threadID string
 		return nil, err
 	}
 
-	threadResp, err := s.stalwart.ThreadGet(ctx, acct.StalwartAccountID, []string{threadID})
+	// 1. Validate thread ownership
+	_, err = s.db.GetThreadAccountScoped(ctx, acct.MailboxID, threadID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrStalwartUnavailable, err)
-	}
-
-	if len(threadResp.List) == 0 {
 		return nil, ErrMessageNotFound
 	}
 
-	emailIDs := threadResp.List[0].EmailIDs
-	if len(emailIDs) == 0 {
+	// 2. Fetch all messages in the thread from PostgreSQL (chronologically ordered)
+	dbMessages, err := s.db.GetMessagesByThread(ctx, acct.MailboxID, threadID)
+	if err != nil {
+		return nil, fmt.Errorf("fetching thread messages from db: %w", err)
+	}
+
+	if len(dbMessages) == 0 {
 		return []MessageResponse{}, nil
 	}
 
-	// Fetch emails
-	emailResp, err := s.stalwart.EmailGet(ctx, acct.StalwartAccountID, emailIDs, []string{
-		"id", "threadId", "mailboxIds", "from", "to", "cc", "bcc", "replyTo",
-		"subject", "preview", "receivedAt", "sentAt", "size", "hasAttachment",
-		"keywords", "inReplyTo", "references", "attachments",
-	})
+	// 3. Fetch full bodies from Stalwart
+	emailIDs := make([]string, 0, len(dbMessages))
+	for _, m := range dbMessages {
+		emailIDs = append(emailIDs, m.StalwartEmailID)
+	}
+
+	// Bulk fetch from Stalwart to get bodies and attachments
+	emailResp, err := s.stalwart.EmailGetWithBody(ctx, acct.StalwartAccountID, emailIDs)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrStalwartUnavailable, err)
 	}
 
-	messages := make([]MessageResponse, 0, len(emailResp.List))
+	stalwartMap := make(map[string]*stalwart.Email)
 	for _, e := range emailResp.List {
-		messages = append(messages, emailToMessageResponse(e))
+		stalwartMap[e.ID] = &e
+	}
+
+	messages := make([]MessageResponse, 0, len(dbMessages))
+	for _, m := range dbMessages {
+		stalwartEmail, ok := stalwartMap[m.StalwartEmailID]
+		if !ok {
+			// fallback/skip if stalwart is out of sync somehow
+			continue
+		}
+
+		// Map from Stalwart Email to MessageResponse using existing logic
+		resp := emailToMessageResponse(*stalwartEmail)
+
+		// We could optionally override Norest fields here, but for now
+		// EmailGetWithBody returns all required fields for rendering.
+		messages = append(messages, resp)
 	}
 
 	return messages, nil

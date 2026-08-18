@@ -27,11 +27,11 @@ func RequestLogger(next http.Handler) http.Handler {
 		duration := time.Since(start)
 		requestID := w.Header().Get("X-Request-ID")
 		userID := r.Context().Value("user_id")
-		
+
 		// Record metrics
 		isError := wrapped.status >= 400
 		metrics.HTTPRequest(duration, isError)
-		
+
 		slog.Info("http request",
 			"service", "norest-api",
 			"request_id", requestID,
@@ -109,14 +109,14 @@ func CORSMiddleware(cfg *config.Config) func(http.Handler) http.Handler {
 					// No specific origins configured, allow all in development
 					w.Header().Set("Access-Control-Allow-Origin", "*")
 					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
 					originAllowed = true
 				} else {
 					// Use configured origins in development
 					if isOriginAllowed(origin, cfg.AllowedOrigins) {
 						w.Header().Set("Access-Control-Allow-Origin", origin)
 						w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-						w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+						w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
 						w.Header().Set("Access-Control-Allow-Credentials", "true")
 						originAllowed = true
 					}
@@ -126,7 +126,7 @@ func CORSMiddleware(cfg *config.Config) func(http.Handler) http.Handler {
 				if isOriginAllowed(origin, cfg.AllowedOrigins) {
 					w.Header().Set("Access-Control-Allow-Origin", origin)
 					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Idempotency-Key")
 					w.Header().Set("Access-Control-Allow-Credentials", "true")
 					w.Header().Set("Access-Control-Max-Age", "86400")
 					originAllowed = true

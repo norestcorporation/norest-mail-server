@@ -14,7 +14,6 @@ var (
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrInvalidEmail       = errors.New("invalid email address")
 	ErrPasswordTooWeak    = errors.New("password must be at least 8 characters long")
-	ErrInvalidToken       = errors.New("invalid or expired token")
 )
 
 type Service struct {

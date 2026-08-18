@@ -156,9 +156,9 @@ func (h *Handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := map[string]any{
-		"id":                 mailbox.ID,
-		"address_id":         mailbox.AddressID,
-		"status":             mailbox.Status,
+		"id":                  mailbox.ID,
+		"address_id":          mailbox.AddressID,
+		"status":              mailbox.Status,
 		"stalwart_account_id": mailbox.StalwartAccountID,
 	}
 
@@ -391,8 +391,8 @@ func (h *Handler) DeleteDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, map[string]string{
-		"id":      draftID,
-		"status":  "deleted",
+		"id":     draftID,
+		"status": "deleted",
 	})
 }
 
@@ -729,6 +729,10 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 
 	opts := ListMessagesOptions{} // same filter parsing as ListMessages can be done
 	opts.MailboxID = r.URL.Query().Get("mailbox_id")
+	opts.Cursor = r.URL.Query().Get("cursor")
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		fmt.Sscanf(limitStr, "%d", &opts.Limit)
+	}
 
 	result, err := h.service.ListThreads(r.Context(), userID.String(), opts)
 	if err != nil {

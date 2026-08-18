@@ -52,18 +52,18 @@ func (r *IdempotencyRepository) StartIdempotentRequest(ctx context.Context, user
 			if err != nil {
 				return nil, fmt.Errorf("insert idempotency key: %w", err)
 			}
-			
+
 			if err := tx.Commit(ctx); err != nil {
 				return nil, fmt.Errorf("commit idempotency key: %w", err)
 			}
-			
+
 			return nil, nil // Caller should proceed with the operation
 		}
 		return nil, fmt.Errorf("query idempotency key: %w", err)
 	}
 
 	// Key exists. Commit the transaction early since we only needed to read the state.
-	// Actually, wait, if it's IN_PROGRESS, another request is working on it. 
+	// Actually, wait, if it's IN_PROGRESS, another request is working on it.
 	// We can commit now.
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)

@@ -1,6 +1,11 @@
 package mail
 
-import "github.com/norest-mail/server/internal/stalwart"
+import (
+	"encoding/json"
+	"time"
+
+	"github.com/norest-mail/server/internal/stalwart"
+)
 
 // --- Norest REST DTOs ---
 // These are the normalized response types returned by the Norest API.
@@ -77,7 +82,8 @@ type MessageListResponse struct {
 type ListMessagesOptions struct {
 	MailboxID string `json:"mailbox_id,omitempty"`
 	Limit     int    `json:"limit,omitempty"`
-	Position  int    `json:"position,omitempty"`
+	Position  int    `json:"position,omitempty"` // For offset pagination (messages)
+	Cursor    string `json:"cursor,omitempty"`   // For keyset pagination (threads)
 	// Filtering
 	From          string `json:"from,omitempty"`
 	To            string `json:"to,omitempty"`
@@ -94,36 +100,50 @@ type ListMessagesOptions struct {
 
 // ThreadResponse represents a message thread.
 type ThreadResponse struct {
-	ID       string            `json:"id"`
-	EmailIDs []string          `json:"email_ids"`
+	ID            string          `json:"id"`
+	Subject       string          `json:"subject"`
+	Participants  json.RawMessage `json:"participants"`
+	MessageCount  int             `json:"message_count"`
+	UnreadCount   int             `json:"unread_count"`
+	Snippet       *string         `json:"snippet"`
+	LastMessageAt time.Time       `json:"last_message_at"`
 }
 
 // ThreadListResponse represents a paginated list of threads.
 type ThreadListResponse struct {
-	Threads  []ThreadResponse `json:"threads"`
-	Total    int              `json:"total"`
-	Position int              `json:"position"`
+	Threads    []ThreadResponse `json:"threads"`
+	NextCursor string           `json:"next_cursor,omitempty"`
 }
 
 // DraftRequest is the Norest DTO for creating or updating a draft.
 type DraftRequest struct {
-	To      []EmailAddressDTO `json:"to,omitempty"`
-	CC      []EmailAddressDTO `json:"cc,omitempty"`
-	BCC     []EmailAddressDTO `json:"bcc,omitempty"`
-	Subject string            `json:"subject,omitempty"`
-	TextBody string           `json:"text_body,omitempty"`
-	HTMLBody string           `json:"html_body,omitempty"`
+	To            []EmailAddressDTO `json:"to,omitempty"`
+	CC            []EmailAddressDTO `json:"cc,omitempty"`
+	BCC           []EmailAddressDTO `json:"bcc,omitempty"`
+	Subject       string            `json:"subject,omitempty"`
+	TextBody      string            `json:"text_body,omitempty"`
+	HTMLBody      string            `json:"html_body,omitempty"`
+	AttachmentIDs []string          `json:"attachment_ids,omitempty"`
 	// For reply/forward
-	InReplyTo  []string        `json:"in_reply_to,omitempty"`
-	References []string        `json:"references,omitempty"`
+	InReplyTo   []string        `json:"in_reply_to,omitempty"`
+	References  []string        `json:"references,omitempty"`
 	Attachments []AttachmentDTO `json:"attachments,omitempty"`
 }
 
 // DraftResponse is returned after creating or updating a draft.
 type DraftResponse struct {
-	ID      string `json:"id"`
-	BlobID  string `json:"blob_id,omitempty"`
-	Message string `json:"message,omitempty"`
+	ID            string            `json:"id"`
+	BlobID        string            `json:"blob_id,omitempty"`
+	Message       string            `json:"message,omitempty"`
+	To            []EmailAddressDTO `json:"to,omitempty"`
+	CC            []EmailAddressDTO `json:"cc,omitempty"`
+	BCC           []EmailAddressDTO `json:"bcc,omitempty"`
+	Subject       string            `json:"subject,omitempty"`
+	TextBody      string            `json:"text_body,omitempty"`
+	HTMLBody      string            `json:"html_body,omitempty"`
+	AttachmentIDs []string          `json:"attachment_ids,omitempty"`
+	CreatedAt     string            `json:"created_at,omitempty"`
+	UpdatedAt     string            `json:"updated_at,omitempty"`
 }
 
 // SendRequest is the Norest DTO for sending a message.
@@ -138,8 +158,8 @@ type SendRequest struct {
 	TextBody string            `json:"text_body,omitempty"`
 	HTMLBody string            `json:"html_body,omitempty"`
 	// For reply/forward
-	InReplyTo  []string        `json:"in_reply_to,omitempty"`
-	References []string        `json:"references,omitempty"`
+	InReplyTo   []string        `json:"in_reply_to,omitempty"`
+	References  []string        `json:"references,omitempty"`
 	Attachments []AttachmentDTO `json:"attachments,omitempty"`
 	// Idempotency
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
@@ -154,9 +174,9 @@ type SendResponse struct {
 
 // MessageActionResponse is returned after a message action (read, star, etc.)
 type MessageActionResponse struct {
-	ID      string `json:"id"`
-	Action  string `json:"action"`
-	Status  string `json:"status"` // "applied"
+	ID     string `json:"id"`
+	Action string `json:"action"`
+	Status string `json:"status"` // "applied"
 }
 
 // MoveRequest is the body for a move operation.
