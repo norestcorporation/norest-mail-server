@@ -1399,9 +1399,16 @@ func (s *Service) ListThreads(ctx context.Context, userID string, opts ListMessa
 
 	stMailboxID := ""
 	if opts.MailboxID != "" {
-		stMailboxID, err = s.resolveStalwartMailboxID(ctx, acct.MailboxID, opts.MailboxID)
-		if err != nil {
-			return nil, err
+		// Check if the provided ID is already a Stalwart mailbox ID (single character like "a", "b", "c")
+		// or a Norest mailbox UUID. If it's short, assume it's already a Stalwart ID.
+		if len(opts.MailboxID) <= 2 {
+			stMailboxID = opts.MailboxID
+		} else {
+			// Otherwise, try to resolve it as a Norest mailbox UUID
+			stMailboxID, err = s.resolveStalwartMailboxID(ctx, acct.MailboxID, opts.MailboxID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
