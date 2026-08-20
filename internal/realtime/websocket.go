@@ -8,8 +8,13 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/norest-mail/server/internal/auth"
+	"github.com/google/uuid"
 )
+
+// TicketValidator defines the interface for validating WebSocket tickets
+type TicketValidator interface {
+	ValidateWebSocketTicket(ctx context.Context, ticket string) (uuid.UUID, error)
+}
 
 const (
 	writeWait  = 10 * time.Second
@@ -25,11 +30,21 @@ type Client struct {
 }
 
 // Handler upgrades HTTP requests to WebSocket connections and registers them with the broker.
-func Handler(broker *Broker) http.HandlerFunc {
+func Handler(broker *Broker, ticketValidator TicketValidator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := auth.UserIDFromContext(r.Context())
-		if !ok {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+		// Check for ticket in query parameter
+		ticket := r.URL.Query().Get("ticket")
+		if ticket == "" {
+			// No ticket provided - this endpoint now requires ticket authentication
+			http.Error(w, "ticket required", http.StatusUnauthorized)
+			return
+		}
+
+		// Validate ticket
+		userID, err := ticketValidator.ValidateWebSocketTicket(r.Context(), ticket)
+		if err != nil {
+			slog.Error("websocket ticket validation failed", "error", err)
+			http.Error(w, "invalid ticket", http.StatusUnauthorized)
 			return
 		}
 

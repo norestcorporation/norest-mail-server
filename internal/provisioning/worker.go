@@ -817,6 +817,18 @@ func (w *Worker) processAccountCreate(ctx context.Context, job *Job) error {
 		return fmt.Errorf("failed to update mailbox to active: %w", err)
 	}
 
+	// 14. Initialize mail_sync_state for reconciliation worker
+	_, err = tx.Exec(txCtx,
+		`INSERT INTO mail_sync_state (mailbox_id, state, status, last_synced_at, updated_at)
+		 VALUES ($1, $2, 'idle', NOW(), NOW())
+		 ON CONFLICT (mailbox_id) DO UPDATE 
+		 SET state = EXCLUDED.state, status = 'idle', last_synced_at = NOW(), updated_at = NOW()`,
+		job.ResourceID, initialState,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to initialize mail_sync_state: %w", err)
+	}
+
 	if err := tx.Commit(txCtx); err != nil {
 		return fmt.Errorf("failed to commit activation: %w", err)
 	}

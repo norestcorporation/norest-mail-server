@@ -25,6 +25,11 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+// Pool returns the underlying database pool for direct queries
+func (r *Repository) Pool() *pgxpool.Pool {
+	return r.pool
+}
+
 func (r *Repository) CreateUser(ctx context.Context, email, passwordHash string) (*users.User, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	var user users.User

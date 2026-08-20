@@ -20,7 +20,7 @@ docker volume ls
 
 echo ""
 echo "=== 4. REBUILD ALL NOREST IMAGES FROM SCRATCH ==="
-docker compose -f docker-compose.multi-worker.yml build --no-cache --pull
+docker compose -f docker-compose.multi-worker.yml build 
 
 echo ""
 echo "=== 5. START POSTGRES + STALWART ==="

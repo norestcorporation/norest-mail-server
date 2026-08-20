@@ -120,3 +120,14 @@ func (p *MailRepository) GetMessagesByThread(ctx context.Context, accountID, thr
 
 	return messages, nil
 }
+
+// GetThreadIDByStalwartID returns the Norest thread ID for a given Stalwart Email ID.
+func (p *MailRepository) GetThreadIDByStalwartID(ctx context.Context, accountID, stalwartEmailID string) (string, error) {
+var threadID string
+query := `SELECT thread_id FROM messages WHERE account_id = $1 AND stalwart_email_id = $2`
+err := p.pool.QueryRow(ctx, query, accountID, stalwartEmailID).Scan(&threadID)
+if err != nil {
+return "", fmt.Errorf("getting thread_id by stalwart id: %w", err)
+}
+return threadID, nil
+}

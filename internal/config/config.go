@@ -38,6 +38,10 @@ type Config struct {
 	DBMaxConnLifetime   int
 	DBMaxConnIdleTime   int
 	DBOperationTimeout  int
+
+	// Mailer Daemon (bounce notification system)
+	MailerDaemonEmail    string
+	MailerDaemonName     string
 }
 
 // Load reads configuration from environment variables and validates required values.
@@ -66,6 +70,8 @@ func Load() (*Config, error) {
 		DBMaxConnLifetime:     getEnvInt("DB_MAX_CONN_LIFETIME", 1800), // 30 minutes in seconds
 		DBMaxConnIdleTime:     getEnvInt("DB_MAX_CONN_IDLE_TIME", 300), // 5 minutes in seconds
 		DBOperationTimeout:    getEnvInt("DB_OPERATION_TIMEOUT", 30), // 30 seconds
+		MailerDaemonEmail:     getEnv("MAILER_DAEMON_EMAIL", "mailer-daemon@norest.in"),
+		MailerDaemonName:      getEnv("MAILER_DAEMON_NAME", "Mail Delivery Subsystem"),
 	}
 
 	if err := cfg.validate(); err != nil {

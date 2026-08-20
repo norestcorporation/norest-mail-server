@@ -69,6 +69,18 @@ type MessageResponse struct {
 	MessageID  string   `json:"message_id,omitempty"`
 	InReplyTo  []string `json:"in_reply_to,omitempty"`
 	References []string `json:"references,omitempty"`
+	// Delivery Status
+	DeliveryStatuses []DeliveryStatusRecord `json:"delivery_statuses,omitempty"`
+}
+
+// DeliveryStatusRecord represents a retrieved delivery status row.
+type DeliveryStatusRecord struct {
+	RecipientEmail string    `json:"recipient_email"`
+	Status         string    `json:"status"`
+	ErrorMessage   string    `json:"error_message,omitempty"`
+	ErrorType      string    `json:"error_type,omitempty"`
+	IsPermanent    bool      `json:"is_permanent"`
+	FailedAt       time.Time `json:"failed_at,omitempty"`
 }
 
 // MessageListResponse is the paginated list of messages.
@@ -169,7 +181,7 @@ type SendRequest struct {
 type SendResponse struct {
 	MessageID    string `json:"message_id,omitempty"`
 	SubmissionID string `json:"submission_id,omitempty"`
-	Status       string `json:"status"` // "sent", "queued", "unknown"
+	Status       string `json:"status"` // "submitted", "queued", "unknown"
 }
 
 // MessageActionResponse is returned after a message action (read, star, etc.)

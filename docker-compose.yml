@@ -36,9 +36,7 @@ services:
       start_period: 20s
 
   norest-api:
-    build:
-      context: .
-      dockerfile: docker/norest/Dockerfile
+    image: server-norest-api:latest
     entrypoint: ["/norest-api"]
     env_file:
       - .env
@@ -52,9 +50,7 @@ services:
     restart: unless-stopped
 
   norest-worker:
-    build:
-      context: .
-      dockerfile: docker/norest/Dockerfile
+    image: server-norest-api:latest
     entrypoint: ["/norest-worker"]
     env_file:
       - .env
@@ -68,9 +64,7 @@ services:
     restart: unless-stopped
 
   norest-worker-2:
-    build:
-      context: .
-      dockerfile: docker/norest/Dockerfile
+    image: server-norest-api:latest
     entrypoint: ["/norest-worker"]
     env_file:
       - .env
@@ -84,9 +78,7 @@ services:
     restart: unless-stopped
 
   norest-worker-3:
-    build:
-      context: .
-      dockerfile: docker/norest/Dockerfile
+    image: server-norest-api:latest
     entrypoint: ["/norest-worker"]
     env_file:
       - .env
@@ -98,6 +90,21 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+
+  init-system-account:
+    image: server-norest-api:latest
+    entrypoint: ["/norest-init-system-account"]
+    env_file:
+      - .env
+    networks:
+      - norest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      stalwart:
+        condition: service_healthy
+    profiles:
+      - init
 
 volumes:
   postgres-data:

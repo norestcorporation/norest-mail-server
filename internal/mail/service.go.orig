@@ -47,7 +47,6 @@ type DB interface {
 	GetDeliveryStatusesByMessageID(ctx context.Context, messageID string) ([]DeliveryStatusRecord, error)
 	TryClaimBounceGeneration(ctx context.Context, submissionID, recipientEmail string) (bool, error)
 	SaveBounceEmailID(ctx context.Context, submissionID, recipientEmail, bounceEmailID string) error
-	GetRFCMessageID(ctx context.Context, stalwartEmailID string) (string, error)
 }
 
 // ThreadData represents the Norest-owned thread projection returned by the DB.

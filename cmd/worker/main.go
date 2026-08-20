@@ -13,6 +13,7 @@ import (
 	"github.com/norest-mail/server/internal/mail"
 	"github.com/norest-mail/server/internal/provisioning"
 	"github.com/norest-mail/server/internal/stalwart"
+	mailworker "github.com/norest-mail/server/internal/worker"
 )
 
 func main() {
@@ -75,7 +76,7 @@ func main() {
 	)
 
 	// Start worker in goroutine
-	errCh := make(chan error, 3) // buffer size 3 since we have three workers now
+	errCh := make(chan error, 4) // buffer size 4 since we have four workers now
 	go func() {
 		errCh <- worker.Run(ctx)
 	}()
@@ -85,9 +86,15 @@ func main() {
 		errCh <- outboxProcessor.Run(ctx)
 	}()
 
-	reconciliationWorker := mail.NewReconciliationWorker(pool, stalwartClient)
+	reconciliationWorker := mailworker.NewReconciliationWorker(pool, stalwartClient)
 	go func() {
 		errCh <- reconciliationWorker.Run(ctx)
+	}()
+
+	dbImpl := db.NewMailRepository(pool)
+	deliveryStatusWorker := mail.NewDeliveryStatusWorker(pool, stalwartClient, dbImpl, cfg.MailerDaemonEmail, cfg.MailerDaemonName)
+	go func() {
+		errCh <- deliveryStatusWorker.Run(ctx)
 	}()
 
 	// Wait for shutdown signal

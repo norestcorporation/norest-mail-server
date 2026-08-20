@@ -2,8 +2,12 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"net/http"
 	"net/mail"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -147,10 +151,96 @@ func (s *Service) Logout(ctx context.Context, userID uuid.UUID) error {
 	// 1. Invalidate the refresh token by storing it in a blacklist
 	// 2. Remove the session from a session store
 	// 3. Log the logout event for security auditing
-	
+
 	// For now, this is a placeholder since JWT tokens are stateless
 	// The client will simply discard the tokens
 	// Future enhancement: implement token blacklist in Redis/database
-	
+
 	return nil
+}
+
+// GenerateWebSocketTicket creates a short-lived, single-use ticket for WebSocket authentication.
+func (s *Service) GenerateWebSocketTicket(ctx context.Context, userID uuid.UUID) (string, error) {
+	// Generate a random 32-byte ticket
+	ticketBytes := make([]byte, 32)
+	if _, err := rand.Read(ticketBytes); err != nil {
+		return "", err
+	}
+	ticket := hex.EncodeToString(ticketBytes)
+
+	// Store ticket in database with 5-minute expiration
+	query := `
+		INSERT INTO websocket_tickets (ticket, user_id, expires_at)
+		VALUES ($1, $2, NOW() + INTERVAL '5 minutes')
+	`
+	_, err := s.repo.Pool().Exec(ctx, query, ticket, userID)
+	if err != nil {
+		return "", err
+	}
+
+	return ticket, nil
+}
+
+// ValidateWebSocketTicket validates and consumes a WebSocket ticket.
+func (s *Service) ValidateWebSocketTicket(ctx context.Context, ticket string) (uuid.UUID, error) {
+	// Get and delete the ticket in a single transaction (atomic consume)
+	tx, err := s.repo.Pool().Begin(ctx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	var userID uuid.UUID
+	var expiresAt time.Time
+
+	query := `
+		SELECT user_id, expires_at
+		FROM websocket_tickets
+		WHERE ticket = $1
+		FOR UPDATE
+	`
+	err = tx.QueryRow(ctx, query, ticket).Scan(&userID, &expiresAt)
+	if err != nil {
+		return uuid.Nil, errors.New("invalid ticket")
+	}
+
+	// Check if ticket is expired
+	if time.Now().After(expiresAt) {
+		// Delete expired ticket
+		tx.Exec(ctx, "DELETE FROM websocket_tickets WHERE ticket = $1", ticket)
+		return uuid.Nil, errors.New("ticket expired")
+	}
+
+	// Consume the ticket (delete it)
+	_, err = tx.Exec(ctx, "DELETE FROM websocket_tickets WHERE ticket = $1", ticket)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return uuid.Nil, err
+	}
+
+	return userID, nil
+}
+
+// WebSocketTicketHandler handles the WebSocket ticket generation endpoint
+func (s *Service) WebSocketTicketHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := UserIDFromContext(r.Context())
+		if !ok {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		ticket, err := s.GenerateWebSocketTicket(r.Context(), userID)
+		if err != nil {
+			http.Error(w, "failed to generate ticket", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ticket":"` + ticket + `"}`))
+	}
 }

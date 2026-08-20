@@ -17,6 +17,7 @@ func TestProvisioningStatus(t *testing.T) {
 		}
 
 		assert.Equal(t, "test-mailbox-id", status.MailboxID)
+		assert.Equal(t, "test-mailbox-id", status.MailboxID)
 		assert.Equal(t, "test-address-id", status.AddressID)
 		assert.Equal(t, "provisioning", status.Status)
 		assert.Nil(t, status.StalwartAccountID)
@@ -46,6 +47,7 @@ func TestProvisioningStatus(t *testing.T) {
 		}
 
 		assert.Equal(t, "provisioning", status.Status)
+		assert.Nil(t, status.StalwartAccountID)
 		assert.False(t, status.ReadyForSession)
 	})
 
@@ -57,6 +59,7 @@ func TestProvisioningStatus(t *testing.T) {
 		}
 
 		assert.Equal(t, "active", status.Status)
+		assert.Nil(t, status.StalwartAccountID)
 		assert.False(t, status.ReadyForSession)
 	})
 }

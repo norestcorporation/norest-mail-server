@@ -111,6 +111,9 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 		r.With(auth.RequireAuth(authService)).Get("/me", authHandler.Me)
 		r.With(auth.RequireAuth(authService)).Post("/logout", authHandler.Logout)
 
+		// Realtime WebSocket (uses ticket-based auth, not JWT)
+		r.Get("/mail/realtime", realtime.Handler(wsBroker, authService))
+
 		// Registration flow endpoints
 		r.Route("/registration", func(r chi.Router) {
 			r.With(auth.RequireAuth(authService)).Get("/status", registrationHandler.GetRegistrationStatus)
@@ -153,8 +156,8 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 				r.Get("/account", mailHandler.GetAccount)
 				r.Get("/provisioning-status", mailHandler.GetProvisioningStatus)
 
-				// Realtime
-				r.Get("/realtime", realtime.Handler(wsBroker))
+				// Realtime ticket (needs JWT auth)
+				r.Post("/realtime/ticket", authService.WebSocketTicketHandler())
 
 				// Attachments
 				r.With(RequestSizeLimit(25<<20)).Post("/attachments", mailHandler.UploadAttachment)

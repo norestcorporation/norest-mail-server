@@ -89,3 +89,28 @@ func (c *Client) EmailSubmissionSet(
 
 	return &result, nil
 }
+
+// EmailSubmissionGetResponse represents the response to an EmailSubmission/get JMAP call.
+type EmailSubmissionGetResponse struct {
+	AccountID string            `json:"accountId"`
+	State     string            `json:"state"`
+	List      []EmailSubmission `json:"list"`
+	NotFound  []string          `json:"notFound"`
+}
+
+// EmailSubmissionGet retrieves email submissions by their IDs.
+func (c *Client) EmailSubmissionGet(ctx context.Context, accountID string, ids []string) (*EmailSubmissionGetResponse, error) {
+	methodCalls := []any{
+		[]any{"EmailSubmission/get", map[string]any{
+			"accountId": accountID,
+			"ids":       ids,
+		}, "0"},
+	}
+
+	var result EmailSubmissionGetResponse
+	if err := c.callJMAPFirst(ctx, jmapMailSubmissionUsing, methodCalls, &result); err != nil {
+		return nil, fmt.Errorf("EmailSubmission/get: %w", err)
+	}
+
+	return &result, nil
+}

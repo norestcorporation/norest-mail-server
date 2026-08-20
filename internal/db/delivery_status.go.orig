@@ -1,0 +1,176 @@
+package db
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	"github.com/norest-mail/server/internal/mail"
+)
+
+// CreateDeliveryStatus inserts a new delivery status record for a single recipient.
+func (p *MailRepository) CreateDeliveryStatus(ctx context.Context, messageID, submissionID, userID, mailboxID, recipientEmail, subject string) error {
+	_, err := p.pool.Exec(ctx, `
+		INSERT INTO message_delivery_status (message_id, submission_id, user_id, mailbox_id, recipient_email, subject, status)
+		VALUES ($1, $2, $3, $4, $5, $6, 'submitted')
+		ON CONFLICT (submission_id, recipient_email) DO NOTHING
+	`, messageID, submissionID, userID, mailboxID, recipientEmail, subject)
+	return err
+}
+
+// GetPendingDeliveryStatus retrieves delivery statuses that need polling.
+func (p *MailRepository) GetPendingDeliveryStatus(ctx context.Context, batchSize int) ([]map[string]any, error) {
+	rows, err := p.pool.Query(ctx, `
+		SELECT submission_id, recipient_email, message_id, user_id, mailbox_id, status, retry_count
+		FROM message_delivery_status
+		WHERE status IN ('submitted', 'queued', 'sending', 'temporary_failure', 'unknown')
+		AND (next_retry_at IS NULL OR next_retry_at <= NOW())
+		ORDER BY last_updated_at ASC
+		LIMIT $1
+	`, batchSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []map[string]any
+	for rows.Next() {
+		var subID, recEmail, msgID, userID, mailboxID, status string
+		var retryCount int
+		if err := rows.Scan(&subID, &recEmail, &msgID, &userID, &mailboxID, &status, &retryCount); err != nil {
+			return nil, err
+		}
+		result = append(result, map[string]any{
+			"submission_id":   subID,
+			"recipient_email": recEmail,
+			"message_id":      msgID,
+			"user_id":         userID,
+			"mailbox_id":      mailboxID,
+			"status":          status,
+			"retry_count":     retryCount,
+		})
+	}
+	return result, nil
+}
+
+// UpdateDeliveryStatus updates the delivery status for a specific recipient.
+func (p *MailRepository) UpdateDeliveryStatus(ctx context.Context, submissionID, recipientEmail, status, errorMessage, errorType, smtpReply string, isPermanent bool) error {
+	query := `
+        UPDATE message_delivery_status
+        SET status = $1, error_message = $2, error_type = $3, smtp_reply = $4, is_permanent = $5, last_updated_at = NOW()
+    `
+	if status == "delivered" {
+		query += `, delivered_at = NOW()`
+	} else if status == "failed" || status == "bounced" {
+		query += `, failed_at = NOW()`
+	}
+	query += ` WHERE submission_id = $6 AND recipient_email = $7`
+
+	_, err := p.pool.Exec(ctx, query, status, errorMessage, errorType, smtpReply, isPermanent, submissionID, recipientEmail)
+	return err
+}
+
+// UpdateDeliveryStatusWithOutbox atomically updates delivery status and inserts outbox event.
+func (p *MailRepository) UpdateDeliveryStatusWithOutbox(ctx context.Context, submissionID, recipientEmail, userID, messageID, status, errorMessage, errorType, smtpReply string, isPermanent bool) error {
+	tx, err := p.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// Update delivery status
+	query := `
+        UPDATE message_delivery_status
+        SET status = $1, error_message = $2, error_type = $3, smtp_reply = $4, is_permanent = $5, last_updated_at = NOW()
+    `
+	if status == "delivered" {
+		query += `, delivered_at = NOW()`
+	} else if status == "failed" || status == "bounced" {
+		query += `, failed_at = NOW()`
+	}
+	query += ` WHERE submission_id = $6 AND recipient_email = $7`
+
+	_, err = tx.Exec(ctx, query, status, errorMessage, errorType, smtpReply, isPermanent, submissionID, recipientEmail)
+	if err != nil {
+		return err
+	}
+
+	// Insert outbox event for realtime delivery status update
+	payload := map[string]any{
+		"message_id":      messageID,
+		"submission_id":   submissionID,
+		"recipient_email": recipientEmail,
+		"status":          status,
+		"error_message":   errorMessage,
+		"error_type":      errorType,
+		"smtp_reply":      smtpReply,
+		"is_permanent":    isPermanent,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO mail_events_outbox (user_id, event_type, payload, status)
+		VALUES ($1, 'delivery.status.updated', $2, 'pending')
+	`, userID, payloadBytes)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// GetDeliveryStatusesByMessageID fetches delivery statuses for a given message.
+func (p *MailRepository) GetDeliveryStatusesByMessageID(ctx context.Context, messageID string) ([]mail.DeliveryStatusRecord, error) {
+	rows, err := p.pool.Query(ctx, `
+		SELECT recipient_email, status, COALESCE(error_message, ''), COALESCE(error_type, ''), is_permanent, failed_at
+		FROM message_delivery_status
+		WHERE message_id = $1
+		ORDER BY recipient_email ASC
+	`, messageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []mail.DeliveryStatusRecord
+	for rows.Next() {
+		var rec mail.DeliveryStatusRecord
+		var failedAt *time.Time
+		if err := rows.Scan(&rec.RecipientEmail, &rec.Status, &rec.ErrorMessage, &rec.ErrorType, &rec.IsPermanent, &failedAt); err != nil {
+			return nil, err
+		}
+		if failedAt != nil {
+			rec.FailedAt = *failedAt
+		}
+		results = append(results, rec)
+	}
+	return results, nil
+}
+
+// TryClaimBounceGeneration atomically claims the generation of a bounce notification.
+// Returns true if the bounce was successfully claimed and should be generated.
+func (p *MailRepository) TryClaimBounceGeneration(ctx context.Context, submissionID, recipientEmail string) (bool, error) {
+	tag, err := p.pool.Exec(ctx,
+		`UPDATE message_delivery_status 
+		 SET bounce_generated = true, bounce_generated_at = NOW() 
+		 WHERE submission_id = $1 AND recipient_email = $2 AND bounce_generated = false`,
+		submissionID, recipientEmail)
+	if err != nil {
+		return false, err
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+// SaveBounceEmailID saves the email ID of the generated bounce notification
+func (p *MailRepository) SaveBounceEmailID(ctx context.Context, submissionID, recipientEmail, bounceEmailID string) error {
+	_, err := p.pool.Exec(ctx,
+		`UPDATE message_delivery_status 
+		 SET bounce_email_id = $3
+		 WHERE submission_id = $1 AND recipient_email = $2`,
+		submissionID, recipientEmail, bounceEmailID)
+	return err
+}

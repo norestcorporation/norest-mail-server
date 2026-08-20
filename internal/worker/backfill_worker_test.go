@@ -16,7 +16,6 @@ func TestReconcileOrphans(t *testing.T) {
 	defer mock.Close(ctx)
 
 	repo := db.NewMailRepository(nil)
-	worker := NewBackfillWorker(nil, nil, repo)
 
 	accountID := "acc-123"
 	msgID := "<parent-msg-id>"
@@ -58,7 +57,7 @@ func TestReconcileOrphans(t *testing.T) {
 			WithArgs("dup-thread-2").
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
-		err = worker.reconcileOrphans(ctx, tx, accountID, msgID, canonicalThreadID)
+		err = ReconcileOrphans(ctx, tx, repo, accountID, msgID, canonicalThreadID)
 		assert.NoError(t, err)
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
