@@ -843,3 +843,38 @@ func (h *Handler) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	// Stream to client
 	_, _ = io.Copy(w, body)
 }
+
+// ToggleReaction toggles a reaction on a message
+func (h *Handler) ToggleReaction(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, ok := auth.UserIDFromContext(ctx)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	messageID := chi.URLParam(r, "id")
+	if messageID == "" {
+		response.Error(w, http.StatusBadRequest, "missing_message_id")
+		return
+	}
+
+	var req struct {
+		Emoji string `json:"emoji"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Emoji == "" {
+		response.Error(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+
+	added, err := h.service.ToggleReaction(ctx, messageID, userID.String(), req.Emoji)
+	if err != nil {
+		handleMailError(w, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"added":   added,
+	})
+}

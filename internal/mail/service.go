@@ -48,6 +48,19 @@ type DB interface {
 	TryClaimBounceGeneration(ctx context.Context, submissionID, recipientEmail string) (bool, error)
 	SaveBounceEmailID(ctx context.Context, submissionID, recipientEmail, bounceEmailID string) error
 	GetRFCMessageID(ctx context.Context, stalwartEmailID string) (string, error)
+
+	// Reactions
+	ToggleReaction(ctx context.Context, messageID, userID, emoji string) (bool, error)
+	GetReactionsForMessage(ctx context.Context, messageID string) ([]EmailReaction, error)
+}
+
+// EmailReaction represents a reaction on an email.
+type EmailReaction struct {
+	ID        string    `json:"id"`
+	MessageID string    `json:"message_id"`
+	UserEmail string    `json:"user_email"`
+	Emoji     string    `json:"emoji"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // ThreadData represents the Norest-owned thread projection returned by the DB.
@@ -409,6 +422,13 @@ func (s *Service) GetMessage(ctx context.Context, userID, messageID string) (*Me
 		msg.DeliveryStatuses = deliveryStatuses
 	} else if err != nil {
 		slog.Error("failed to get delivery statuses", "error", err, "message_id", msg.ID)
+	}
+
+	// Fetch reactions
+	if reactions, err := s.db.GetReactionsForMessage(ctx, msg.ID); err == nil && len(reactions) > 0 {
+		msg.Reactions = reactions
+	} else if err != nil {
+		slog.Error("failed to get reactions", "error", err, "message_id", msg.ID)
 	}
 
 	return &msg, nil
@@ -1602,6 +1622,13 @@ func (s *Service) GetThreadMessages(ctx context.Context, userID, threadID string
 		// Override Norest fields
 		resp.ThreadID = m.ThreadID
 
+		// Fetch reactions
+		if reactions, err := s.db.GetReactionsForMessage(ctx, resp.ID); err == nil && len(reactions) > 0 {
+			resp.Reactions = reactions
+		} else if err != nil {
+			slog.Error("failed to get reactions for thread message", "error", err, "message_id", resp.ID)
+		}
+
 		messages = append(messages, resp)
 	}
 
@@ -1755,4 +1782,28 @@ func buildAttachments(atts []AttachmentDTO) []map[string]any {
 		}
 	}
 	return res
+}
+
+// ToggleReaction adds or removes an emoji reaction for a user on a message.
+func (s *Service) ToggleReaction(ctx context.Context, messageID, userID, emoji string) (bool, error) {
+	acct, err := s.resolveUserAccount(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	userEmail, err := s.resolveUserAddress(ctx, acct)
+	if err != nil {
+		return false, err
+	}
+
+	// Make sure message belongs to user
+	existing, err := s.stalwart.EmailGet(ctx, acct.StalwartAccountID, []string{messageID}, []string{"id"})
+	if err != nil {
+		return false, fmt.Errorf("%w: %v", ErrStalwartUnavailable, err)
+	}
+	if len(existing.List) == 0 {
+		return false, ErrMessageNotFound
+	}
+
+	return s.db.ToggleReaction(ctx, messageID, userEmail, emoji)
 }

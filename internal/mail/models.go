@@ -58,6 +58,7 @@ type MessageResponse struct {
 	SentAt        string            `json:"sent_at,omitempty"`
 	Size          int               `json:"size,omitempty"`
 	HasAttachment bool              `json:"has_attachment"`
+	Reactions     []EmailReaction   `json:"reactions,omitempty"`
 	Attachments   []AttachmentDTO   `json:"attachments,omitempty"`
 	IsRead        bool              `json:"is_read"`
 	IsStarred     bool              `json:"is_starred"`

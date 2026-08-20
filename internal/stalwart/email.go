@@ -27,10 +27,10 @@ type Email struct {
 	References    []string        `json:"references,omitempty"`
 	SentAt        string          `json:"sentAt,omitempty"`
 	// Body content — only populated when explicitly requested via properties.
-	TextBody []EmailBodyPart `json:"textBody,omitempty"`
-	HTMLBody []EmailBodyPart `json:"htmlBody,omitempty"`
-	Attachments []EmailBodyPart `json:"attachments,omitempty"`
-	BodyValues map[string]EmailBodyValue `json:"bodyValues,omitempty"`
+	TextBody    []EmailBodyPart           `json:"textBody,omitempty"`
+	HTMLBody    []EmailBodyPart           `json:"htmlBody,omitempty"`
+	Attachments []EmailBodyPart           `json:"attachments,omitempty"`
+	BodyValues  map[string]EmailBodyValue `json:"bodyValues,omitempty"`
 }
 
 // EmailBodyPart references a body part in JMAP Email.
@@ -46,9 +46,9 @@ type EmailBodyPart struct {
 
 // EmailBodyValue holds the actual text content for a body part.
 type EmailBodyValue struct {
-	Value              string `json:"value"`
-	IsEncodingProblem  bool   `json:"isEncodingProblem,omitempty"`
-	IsTruncated        bool   `json:"isTruncated,omitempty"`
+	Value             string `json:"value"`
+	IsEncodingProblem bool   `json:"isEncodingProblem,omitempty"`
+	IsTruncated       bool   `json:"isTruncated,omitempty"`
 }
 
 // EmailAddress represents a JMAP email address.
@@ -77,15 +77,15 @@ type EmailGetResponse struct {
 
 // EmailSetResponse represents the response to an Email/set JMAP call.
 type EmailSetResponse struct {
-	AccountID  string                       `json:"accountId"`
-	OldState   string                       `json:"oldState"`
-	NewState   string                       `json:"newState"`
-	Created    map[string]Email             `json:"created"`
-	Updated    map[string]any               `json:"updated"`
-	Destroyed  []string                     `json:"destroyed"`
-	NotCreated map[string]EmailSetError     `json:"notCreated"`
-	NotUpdated map[string]EmailSetError     `json:"notUpdated"`
-	NotDestroyed map[string]EmailSetError   `json:"notDestroyed"`
+	AccountID    string                   `json:"accountId"`
+	OldState     string                   `json:"oldState"`
+	NewState     string                   `json:"newState"`
+	Created      map[string]Email         `json:"created"`
+	Updated      map[string]any           `json:"updated"`
+	Destroyed    []string                 `json:"destroyed"`
+	NotCreated   map[string]EmailSetError `json:"notCreated"`
+	NotUpdated   map[string]EmailSetError `json:"notUpdated"`
+	NotDestroyed map[string]EmailSetError `json:"notDestroyed"`
 }
 
 // EmailSetError represents an error for a specific object in Email/set.
@@ -180,14 +180,15 @@ func (c *Client) EmailGetWithBody(ctx context.Context, accountID string, ids []s
 	args := map[string]any{
 		"accountId": accountID,
 		"ids":       ids,
-			"properties": []string{
-				"id", "blobId", "threadId", "mailboxIds", "keywords",
-				"size", "receivedAt", "from", "to", "cc", "bcc", "replyTo",
-				"subject", "preview", "hasAttachment", "attachments",
-				"messageId", "inReplyTo", "references", "sentAt",
-				"textBody", "htmlBody", "bodyValues",
-			},
-		"fetchAllBodyValues": true,
+		"properties": []string{
+			"id", "blobId", "threadId", "mailboxIds", "keywords",
+			"size", "receivedAt", "from", "to", "cc", "bcc", "replyTo",
+			"subject", "preview", "hasAttachment", "attachments",
+			"messageId", "inReplyTo", "references", "sentAt",
+			"textBody", "htmlBody", "bodyValues",
+		},
+		"fetchTextBodyValues": true,
+		"fetchHTMLBodyValues": true,
 	}
 
 	methodCalls := []any{

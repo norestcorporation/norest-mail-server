@@ -184,6 +184,7 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 				r.Post("/messages/{id}/unstar", mailHandler.UnstarMessage)
 				r.Post("/messages/{id}/archive", mailHandler.ArchiveMessage)
 				r.Post("/messages/{id}/move", mailHandler.MoveMessage)
+				r.Post("/messages/{id}/reactions", mailHandler.ToggleReaction)
 				r.Post("/messages/{id}/trash", mailHandler.TrashMessage)
 				r.Post("/messages/{id}/restore", mailHandler.RestoreMessage)
 				r.Post("/messages/{id}/spam", mailHandler.SpamMessage)
