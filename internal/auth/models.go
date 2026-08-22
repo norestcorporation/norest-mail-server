@@ -2,6 +2,7 @@ package auth
 
 import (
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -41,16 +42,25 @@ type UserResponse struct {
 	Status string    `json:"status"`
 }
 
+type WelcomeExperience struct {
+	Completed   bool       `json:"completed"`
+	CompletedAt *time.Time `json:"completed_at"`
+}
+
+type ExperienceResponse struct {
+	Welcome WelcomeExperience `json:"welcome"`
+}
+
 // RegistrationStatus represents the current stage of user registration.
 type RegistrationStatus string
 
 const (
-	RegistrationStatusPending       RegistrationStatus = "pending"        // Initial registration, no domain
-	RegistrationStatusDomainAdded   RegistrationStatus = "domain_added"   // Domain added but not verified
-	RegistrationStatusVerifying     RegistrationStatus = "verifying"      // Domain verification in progress
-	RegistrationStatusVerified      RegistrationStatus = "verified"       // Domain verified, ready for address
-	RegistrationStatusProvisioning  RegistrationStatus = "provisioning"    // Address provisioning in progress
-	RegistrationStatusActive        RegistrationStatus = "active"         // Fully active
+	RegistrationStatusPending      RegistrationStatus = "pending"      // Initial registration, no domain
+	RegistrationStatusDomainAdded  RegistrationStatus = "domain_added" // Domain added but not verified
+	RegistrationStatusVerifying    RegistrationStatus = "verifying"    // Domain verification in progress
+	RegistrationStatusVerified     RegistrationStatus = "verified"     // Domain verified, ready for address
+	RegistrationStatusProvisioning RegistrationStatus = "provisioning" // Address provisioning in progress
+	RegistrationStatusActive       RegistrationStatus = "active"       // Fully active
 )
 
 // DomainType represents the type of domain in registration flow.
@@ -58,7 +68,7 @@ type DomainType string
 
 const (
 	DomainTypePlatform DomainType = "platform_owned" // Platform-owned domain
-	DomainTypeCustom   DomainType = "custom"          // User-owned custom domain
+	DomainTypeCustom   DomainType = "custom"         // User-owned custom domain
 )
 
 // RegistrationFlowResponse provides detailed registration status.

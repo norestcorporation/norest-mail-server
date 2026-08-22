@@ -81,7 +81,9 @@
   "paths": {
     "/v1/auth/register": {
       "post": {
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "summary": "Register new user",
         "requestBody": {
           "required": true,
@@ -89,7 +91,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["email", "password"],
+                "required": [
+                  "email",
+                  "password"
+                ],
                 "properties": {
                   "email": {
                     "type": "string",
@@ -119,7 +124,9 @@
     },
     "/v1/auth/login": {
       "post": {
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "summary": "Login user",
         "requestBody": {
           "required": true,
@@ -127,7 +134,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["email", "password"],
+                "required": [
+                  "email",
+                  "password"
+                ],
                 "properties": {
                   "email": {
                     "type": "string",
@@ -176,9 +186,15 @@
     },
     "/v1/me": {
       "get": {
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "summary": "Get current user",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Current user details"
@@ -191,9 +207,15 @@
     },
     "/v1/domains/platform": {
       "get": {
-        "tags": ["Platform Domain"],
+        "tags": [
+          "Platform Domain"
+        ],
         "summary": "List available platform domains",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of platform domains"
@@ -203,9 +225,15 @@
     },
     "/v1/domains/check/{name}": {
       "get": {
-        "tags": ["Platform Domain"],
+        "tags": [
+          "Platform Domain"
+        ],
         "summary": "Check domain status",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "name",
@@ -228,9 +256,15 @@
     },
     "/v1/domains/{id}": {
       "get": {
-        "tags": ["Platform Domain"],
+        "tags": [
+          "Platform Domain"
+        ],
         "summary": "Get domain details",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -253,9 +287,15 @@
     },
     "/v1/domains/{domainID}/addresses/check/{localPart}": {
       "get": {
-        "tags": ["Email Address"],
+        "tags": [
+          "Email Address"
+        ],
         "summary": "Check username availability",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "domainID",
@@ -283,9 +323,15 @@
     },
     "/v1/domains/{domainID}/addresses/reserve": {
       "post": {
-        "tags": ["Email Address"],
+        "tags": [
+          "Email Address"
+        ],
         "summary": "Reserve email address",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "domainID",
@@ -302,7 +348,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["local_part"],
+                "required": [
+                  "local_part"
+                ],
                 "properties": {
                   "local_part": {
                     "type": "string"
@@ -327,9 +375,15 @@
     },
     "/v1/domains/{domainID}/addresses": {
       "get": {
-        "tags": ["Email Address"],
+        "tags": [
+          "Email Address"
+        ],
         "summary": "List addresses for domain",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "domainID",
@@ -349,9 +403,15 @@
     },
     "/v1/addresses/{addressID}/claim": {
       "post": {
-        "tags": ["Email Address"],
+        "tags": [
+          "Email Address"
+        ],
         "summary": "Claim reserved address",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "addressID",
@@ -377,9 +437,15 @@
     },
     "/v1/mail/session": {
       "post": {
-        "tags": ["Mail Account Provisioning"],
+        "tags": [
+          "Mail Account Provisioning"
+        ],
         "summary": "Create mail session",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Mail session created"
@@ -392,9 +458,15 @@
     },
     "/v1/mail/account": {
       "get": {
-        "tags": ["Mail Account Provisioning"],
+        "tags": [
+          "Mail Account Provisioning"
+        ],
         "summary": "Get mail account details",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Account details"
@@ -404,9 +476,15 @@
     },
     "/v1/mail/provisioning-status": {
       "get": {
-        "tags": ["Mail Account Provisioning"],
+        "tags": [
+          "Mail Account Provisioning"
+        ],
         "summary": "Get provisioning status",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Provisioning status"
@@ -416,9 +494,15 @@
     },
     "/v1/mail/mailboxes": {
       "get": {
-        "tags": ["Mailbox"],
+        "tags": [
+          "Mailbox"
+        ],
         "summary": "List mailboxes",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of mailboxes"
@@ -428,9 +512,15 @@
     },
     "/v1/mail/mailboxes/{id}": {
       "get": {
-        "tags": ["Mailbox"],
+        "tags": [
+          "Mailbox"
+        ],
         "summary": "Get mailbox details",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -453,9 +543,15 @@
     },
     "/v1/mail/messages": {
       "get": {
-        "tags": ["Messages"],
+        "tags": [
+          "Messages"
+        ],
         "summary": "List messages",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "mailbox_id",
@@ -531,9 +627,15 @@
     },
     "/v1/mail/messages/{id}": {
       "get": {
-        "tags": ["Messages"],
+        "tags": [
+          "Messages"
+        ],
         "summary": "Get message details",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -556,9 +658,15 @@
     },
     "/v1/mail/search": {
       "get": {
-        "tags": ["Messages"],
+        "tags": [
+          "Messages"
+        ],
         "summary": "Search messages",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "query",
@@ -612,9 +720,15 @@
     },
     "/v1/mail/sync": {
       "post": {
-        "tags": ["Messages"],
+        "tags": [
+          "Messages"
+        ],
         "summary": "Incremental sync",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Sync results"
@@ -627,9 +741,15 @@
     },
     "/v1/mail/attachments": {
       "post": {
-        "tags": ["Attachments"],
+        "tags": [
+          "Attachments"
+        ],
         "summary": "Upload attachment",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -653,9 +773,15 @@
     },
     "/v1/mail/attachments/{blob_id}": {
       "get": {
-        "tags": ["Attachments"],
+        "tags": [
+          "Attachments"
+        ],
         "summary": "Download attachment",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "blob_id",
@@ -686,16 +812,26 @@
     },
     "/v1/mail/drafts": {
       "post": {
-        "tags": ["Drafts"],
+        "tags": [
+          "Drafts"
+        ],
         "summary": "Create draft",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["from", "to", "subject"],
+                "required": [
+                  "from",
+                  "to",
+                  "subject"
+                ],
                 "properties": {
                   "from": {
                     "type": "string"
@@ -747,9 +883,15 @@
     },
     "/v1/mail/drafts/{id}": {
       "get": {
-        "tags": ["Drafts"],
+        "tags": [
+          "Drafts"
+        ],
         "summary": "Get draft",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -770,9 +912,15 @@
         }
       },
       "put": {
-        "tags": ["Drafts"],
+        "tags": [
+          "Drafts"
+        ],
         "summary": "Update draft",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -823,9 +971,15 @@
         }
       },
       "delete": {
-        "tags": ["Drafts"],
+        "tags": [
+          "Drafts"
+        ],
         "summary": "Delete draft",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -848,9 +1002,15 @@
     },
     "/v1/mail/send": {
       "post": {
-        "tags": ["Send"],
+        "tags": [
+          "Send"
+        ],
         "summary": "Send message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -867,7 +1027,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["from", "to", "subject"],
+                "required": [
+                  "from",
+                  "to",
+                  "subject"
+                ],
                 "properties": {
                   "from": {
                     "type": "string"
@@ -928,9 +1092,15 @@
     },
     "/v1/mail/threads": {
       "get": {
-        "tags": ["Threads"],
+        "tags": [
+          "Threads"
+        ],
         "summary": "List threads",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "mailbox_id",
@@ -949,9 +1119,15 @@
     },
     "/v1/mail/threads/{id}": {
       "get": {
-        "tags": ["Threads"],
+        "tags": [
+          "Threads"
+        ],
         "summary": "Get thread details",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -974,9 +1150,15 @@
     },
     "/v1/mail/threads/{id}/messages": {
       "get": {
-        "tags": ["Threads"],
+        "tags": [
+          "Threads"
+        ],
         "summary": "Get thread messages",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -996,9 +1178,15 @@
     },
     "/v1/mail/messages/{id}/reply": {
       "post": {
-        "tags": ["Threads"],
+        "tags": [
+          "Threads"
+        ],
         "summary": "Reply to message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1015,7 +1203,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["from", "to", "subject"],
+                "required": [
+                  "from",
+                  "to",
+                  "subject"
+                ],
                 "properties": {
                   "from": {
                     "type": "string"
@@ -1046,9 +1238,15 @@
     },
     "/v1/mail/messages/{id}/reply-all": {
       "post": {
-        "tags": ["Threads"],
+        "tags": [
+          "Threads"
+        ],
         "summary": "Reply all to message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1065,7 +1263,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["from", "to", "subject"],
+                "required": [
+                  "from",
+                  "to",
+                  "subject"
+                ],
                 "properties": {
                   "from": {
                     "type": "string"
@@ -1102,9 +1304,15 @@
     },
     "/v1/mail/messages/{id}/forward": {
       "post": {
-        "tags": ["Threads"],
+        "tags": [
+          "Threads"
+        ],
         "summary": "Forward message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1121,7 +1329,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["from", "to", "subject"],
+                "required": [
+                  "from",
+                  "to",
+                  "subject"
+                ],
                 "properties": {
                   "from": {
                     "type": "string"
@@ -1152,9 +1364,15 @@
     },
     "/v1/mail/messages/{id}/read": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Mark message as read",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1174,9 +1392,15 @@
     },
     "/v1/mail/messages/{id}/unread": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Mark message as unread",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1196,9 +1420,15 @@
     },
     "/v1/mail/messages/{id}/star": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Star message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1218,9 +1448,15 @@
     },
     "/v1/mail/messages/{id}/unstar": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Unstar message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1240,9 +1476,15 @@
     },
     "/v1/mail/messages/{id}/archive": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Archive message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1262,9 +1504,15 @@
     },
     "/v1/mail/messages/{id}/move": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Move message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1281,7 +1529,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["mailbox_id"],
+                "required": [
+                  "mailbox_id"
+                ],
                 "properties": {
                   "mailbox_id": {
                     "type": "string"
@@ -1300,9 +1550,15 @@
     },
     "/v1/mail/messages/{id}/trash": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Move message to trash",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1322,9 +1578,15 @@
     },
     "/v1/mail/messages/{id}/restore": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Restore message",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1344,9 +1606,15 @@
     },
     "/v1/mail/messages/{id}/spam": {
       "post": {
-        "tags": ["Message Actions"],
+        "tags": [
+          "Message Actions"
+        ],
         "summary": "Mark message as spam",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -1366,9 +1634,15 @@
     },
     "/v1/mail/realtime": {
       "get": {
-        "tags": ["Realtime"],
+        "tags": [
+          "Realtime"
+        ],
         "summary": "WebSocket connection for real-time updates",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "101": {
             "description": "WebSocket connection established"
@@ -1378,9 +1652,15 @@
     },
     "/v1/account/usage": {
       "get": {
-        "tags": ["Account Management"],
+        "tags": [
+          "Account Management"
+        ],
         "summary": "Get account usage",
-        "security": [{"bearerAuth": []}],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Account usage details"
@@ -1390,7 +1670,9 @@
     },
     "/health": {
       "get": {
-        "tags": ["Health & Monitoring"],
+        "tags": [
+          "Health & Monitoring"
+        ],
         "summary": "Health check",
         "responses": {
           "200": {
@@ -1401,7 +1683,9 @@
     },
     "/health/live": {
       "get": {
-        "tags": ["Health & Monitoring"],
+        "tags": [
+          "Health & Monitoring"
+        ],
         "summary": "Liveness probe",
         "responses": {
           "200": {
@@ -1412,7 +1696,9 @@
     },
     "/health/ready": {
       "get": {
-        "tags": ["Health & Monitoring"],
+        "tags": [
+          "Health & Monitoring"
+        ],
         "summary": "Readiness probe",
         "responses": {
           "200": {
@@ -1426,7 +1712,9 @@
     },
     "/health/db": {
       "get": {
-        "tags": ["Health & Monitoring"],
+        "tags": [
+          "Health & Monitoring"
+        ],
         "summary": "Database health check",
         "responses": {
           "200": {
@@ -1440,7 +1728,9 @@
     },
     "/health/stalwart": {
       "get": {
-        "tags": ["Health & Monitoring"],
+        "tags": [
+          "Health & Monitoring"
+        ],
         "summary": "Stalwart health check",
         "responses": {
           "200": {
@@ -1454,11 +1744,95 @@
     },
     "/metrics": {
       "get": {
-        "tags": ["Health & Monitoring"],
+        "tags": [
+          "Health & Monitoring"
+        ],
         "summary": "Metrics endpoint",
         "responses": {
           "200": {
             "description": "Metrics data"
+          }
+        }
+      }
+    },
+    "/v1/me/experience": {
+      "get": {
+        "summary": "Get Welcome Experience State",
+        "description": "Returns the authenticated user's first-run experience state.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "welcome": {
+                      "type": "object",
+                      "properties": {
+                        "completed": {
+                          "type": "boolean"
+                        },
+                        "completed_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/v1/me/experience/welcome/complete": {
+      "post": {
+        "summary": "Complete Welcome Experience",
+        "description": "Marks the authenticated user's welcome experience as completed.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "welcome": {
+                      "type": "object",
+                      "properties": {
+                        "completed": {
+                          "type": "boolean"
+                        },
+                        "completed_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }

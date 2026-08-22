@@ -123,3 +123,39 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, map[string]string{"message": "logged out successfully"})
 }
+
+func (h *Handler) GetExperience(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	exp, err := h.service.GetUserExperience(r.Context(), userID)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, ExperienceResponse{
+		Welcome: *exp,
+	})
+}
+
+func (h *Handler) CompleteWelcomeExperience(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	exp, err := h.service.CompleteWelcomeExperience(r.Context(), userID)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, ExperienceResponse{
+		Welcome: *exp,
+	})
+}

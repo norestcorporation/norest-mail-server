@@ -108,7 +108,12 @@ func NewRouter(cfg *config.Config, pool *pgxpool.Pool, stalwartClient *stalwart.
 			r.Post("/refresh", authHandler.RefreshToken)
 		})
 
-		r.With(auth.RequireAuth(authService)).Get("/me", authHandler.Me)
+		r.Route("/me", func(r chi.Router) {
+			r.Use(auth.RequireAuth(authService))
+			r.Get("/", authHandler.Me)
+			r.Get("/experience", authHandler.GetExperience)
+			r.Post("/experience/welcome/complete", authHandler.CompleteWelcomeExperience)
+		})
 		r.With(auth.RequireAuth(authService)).Post("/logout", authHandler.Logout)
 
 		// Realtime WebSocket (uses ticket-based auth, not JWT)

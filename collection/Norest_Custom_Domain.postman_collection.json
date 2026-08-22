@@ -151,8 +151,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "auth", "register"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": [],
@@ -195,8 +201,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
             }
           },
           "response": [],
@@ -242,8 +254,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/auth/refresh",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "auth", "refresh"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "refresh"
+              ]
             }
           },
           "response": [],
@@ -291,8 +309,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/auth/logout",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "auth", "logout"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "logout"
+              ]
             }
           },
           "response": [],
@@ -324,8 +348,13 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/me",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "me"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "me"
+              ]
             }
           },
           "response": [],
@@ -375,8 +404,13 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/domains",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains"
+              ]
             }
           },
           "response": [],
@@ -412,8 +446,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}"
+              ]
             }
           },
           "response": [],
@@ -449,8 +489,13 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains"
+              ]
             }
           },
           "response": [],
@@ -484,8 +529,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}/verification/start",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}", "verification", "start"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}",
+                "verification",
+                "start"
+              ]
             }
           },
           "response": []
@@ -502,8 +555,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}/verification",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}", "verification"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}",
+                "verification"
+              ]
             }
           },
           "response": []
@@ -520,8 +580,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}"
+              ]
             }
           },
           "response": []
@@ -543,8 +609,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/registration/status",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "registration", "status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "registration",
+                "status"
+              ]
             }
           },
           "response": [],
@@ -583,8 +655,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/registration/domains/{{domain_id}}/verify",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "registration", "domains", "{{domain_id}}", "verify"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "registration",
+                "domains",
+                "{{domain_id}}",
+                "verify"
+              ]
             }
           },
           "response": []
@@ -601,8 +681,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/registration/domains/{{domain_id}}/verify",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "registration", "domains", "{{domain_id}}", "verify"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "registration",
+                "domains",
+                "{{domain_id}}",
+                "verify"
+              ]
             }
           },
           "response": []
@@ -624,8 +712,17 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}/addresses/check/{{username}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}", "addresses", "check", "{{username}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}",
+                "addresses",
+                "check",
+                "{{username}}"
+              ]
             }
           },
           "response": []
@@ -651,8 +748,16 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}/addresses/reserve",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}", "addresses", "reserve"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}",
+                "addresses",
+                "reserve"
+              ]
             }
           },
           "response": [],
@@ -688,8 +793,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/domains/{{domain_id}}/addresses",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "domains", "{{domain_id}}", "addresses"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "domains",
+                "{{domain_id}}",
+                "addresses"
+              ]
             }
           },
           "response": [],
@@ -725,8 +837,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/addresses/{{reservation_id}}/claim",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "addresses", "{{reservation_id}}", "claim"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "addresses",
+                "{{reservation_id}}",
+                "claim"
+              ]
             }
           },
           "response": []
@@ -748,8 +867,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/session",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "session"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "session"
+              ]
             }
           },
           "response": [],
@@ -785,8 +910,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/account",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "account"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "account"
+              ]
             }
           },
           "response": [],
@@ -822,8 +953,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/provisioning-status",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "provisioning-status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "provisioning-status"
+              ]
             }
           },
           "response": [],
@@ -861,8 +998,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/mailboxes",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "mailboxes"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "mailboxes"
+              ]
             }
           },
           "response": [],
@@ -907,8 +1050,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/mailboxes/{{mailbox_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "mailboxes", "{{mailbox_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "mailboxes",
+                "{{mailbox_id}}"
+              ]
             }
           },
           "response": []
@@ -930,8 +1080,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages?mailbox_id={{inbox_id}}&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages"
+              ],
               "query": [
                 {
                   "key": "mailbox_id",
@@ -977,8 +1133,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}"
+              ]
             }
           },
           "response": []
@@ -995,8 +1158,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/search?query=search_term",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "search"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "search"
+              ],
               "query": [
                 {
                   "key": "query",
@@ -1019,8 +1188,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/sync",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "sync"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "sync"
+              ]
             }
           },
           "response": [],
@@ -1066,8 +1241,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/attachments",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "attachments"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "attachments"
+              ]
             }
           },
           "response": [],
@@ -1100,8 +1281,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/attachments/{{attachment_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "attachments", "{{attachment_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "attachments",
+                "{{attachment_id}}"
+              ]
             }
           },
           "response": []
@@ -1132,8 +1320,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/drafts",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "drafts"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "drafts"
+              ]
             }
           },
           "response": [],
@@ -1166,8 +1360,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/drafts/{{draft_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "drafts", "{{draft_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "drafts",
+                "{{draft_id}}"
+              ]
             }
           },
           "response": []
@@ -1193,8 +1394,15 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/drafts/{{draft_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "drafts", "{{draft_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "drafts",
+                "{{draft_id}}"
+              ]
             }
           },
           "response": []
@@ -1211,8 +1419,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/drafts/{{draft_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "drafts", "{{draft_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "drafts",
+                "{{draft_id}}"
+              ]
             }
           },
           "response": []
@@ -1247,8 +1462,14 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/send",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "send"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "send"
+              ]
             }
           },
           "response": [],
@@ -1282,8 +1503,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/threads?mailbox_id={{inbox_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "threads"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "threads"
+              ],
               "query": [
                 {
                   "key": "mailbox_id",
@@ -1322,8 +1549,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/threads/{{thread_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "threads", "{{thread_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "threads",
+                "{{thread_id}}"
+              ]
             }
           },
           "response": []
@@ -1340,8 +1574,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/threads/{{thread_id}}/messages",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "threads", "{{thread_id}}", "messages"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "threads",
+                "{{thread_id}}",
+                "messages"
+              ]
             }
           },
           "response": []
@@ -1367,8 +1609,16 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/reply",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "reply"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "reply"
+              ]
             }
           },
           "response": []
@@ -1394,8 +1644,16 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/reply-all",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "reply-all"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "reply-all"
+              ]
             }
           },
           "response": []
@@ -1421,8 +1679,16 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/forward",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "forward"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "forward"
+              ]
             }
           },
           "response": []
@@ -1444,8 +1710,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/read",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "read"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "read"
+              ]
             }
           },
           "response": []
@@ -1462,8 +1736,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/unread",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "unread"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "unread"
+              ]
             }
           },
           "response": []
@@ -1480,8 +1762,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/star",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "star"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "star"
+              ]
             }
           },
           "response": []
@@ -1498,8 +1788,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/unstar",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "unstar"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "unstar"
+              ]
             }
           },
           "response": []
@@ -1516,8 +1814,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/archive",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "archive"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "archive"
+              ]
             }
           },
           "response": []
@@ -1543,8 +1849,16 @@
             },
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/move",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "move"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "move"
+              ]
             }
           },
           "response": []
@@ -1561,8 +1875,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/trash",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "trash"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "trash"
+              ]
             }
           },
           "response": []
@@ -1579,8 +1901,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/restore",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "restore"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "restore"
+              ]
             }
           },
           "response": []
@@ -1597,8 +1927,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/mail/messages/{{message_id}}/spam",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "mail", "messages", "{{message_id}}", "spam"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "mail",
+                "messages",
+                "{{message_id}}",
+                "spam"
+              ]
             }
           },
           "response": []
@@ -1621,9 +1959,15 @@
             "url": {
               "raw": "ws://localhost:8080/v1/mail/realtime",
               "protocol": "ws",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8080",
-              "path": ["v1", "mail", "realtime"]
+              "path": [
+                "v1",
+                "mail",
+                "realtime"
+              ]
             },
             "description": "WebSocket connection for real-time updates"
           },
@@ -1646,8 +1990,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v1/account/usage",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "account", "usage"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "account",
+                "usage"
+              ]
             }
           },
           "response": []
@@ -1664,8 +2014,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
             }
           },
           "response": []
@@ -1677,8 +2031,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health/live",
-              "host": ["{{base_url}}"],
-              "path": ["health", "live"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
             }
           },
           "response": []
@@ -1690,8 +2049,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health/ready",
-              "host": ["{{base_url}}"],
-              "path": ["health", "ready"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
             }
           },
           "response": []
@@ -1703,8 +2067,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health/db",
-              "host": ["{{base_url}}"],
-              "path": ["health", "db"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "db"
+              ]
             }
           },
           "response": []
@@ -1716,8 +2085,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health/stalwart",
-              "host": ["{{base_url}}"],
-              "path": ["health", "stalwart"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "stalwart"
+              ]
             }
           },
           "response": []
@@ -1729,13 +2103,74 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/metrics",
-              "host": ["{{base_url}}"],
-              "path": ["metrics"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "metrics"
+              ]
             }
           },
           "response": []
         }
       ]
+    },
+    {
+      "name": "Get Welcome Experience State",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{api_url}}/v1/me/experience",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "v1",
+            "me",
+            "experience"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Complete Welcome Experience",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{api_url}}/v1/me/experience/welcome/complete",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "v1",
+            "me",
+            "experience",
+            "welcome",
+            "complete"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

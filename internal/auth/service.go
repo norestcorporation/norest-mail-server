@@ -108,6 +108,14 @@ func (s *Service) GetUserByID(ctx context.Context, id uuid.UUID) (*users.User, e
 	return s.repo.GetUserByID(ctx, id)
 }
 
+func (s *Service) GetUserExperience(ctx context.Context, id uuid.UUID) (*WelcomeExperience, error) {
+	return s.repo.GetUserExperience(ctx, id)
+}
+
+func (s *Service) CompleteWelcomeExperience(ctx context.Context, id uuid.UUID) (*WelcomeExperience, error) {
+	return s.repo.CompleteWelcomeExperience(ctx, id)
+}
+
 func (s *Service) ValidateToken(tokenStr string) (uuid.UUID, error) {
 	return s.tokenService.ValidateToken(tokenStr)
 }

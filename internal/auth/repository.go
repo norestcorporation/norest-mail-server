@@ -36,7 +36,7 @@ func (r *Repository) CreateUser(ctx context.Context, email, passwordHash string)
 
 	txCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	tx, err := r.pool.Begin(txCtx)
 	if err != nil {
 		return nil, err
@@ -162,4 +162,44 @@ func (r *Repository) GetUserByID(ctx context.Context, id uuid.UUID) (*users.User
 	}
 
 	return &user, nil
+}
+
+func (r *Repository) GetUserExperience(ctx context.Context, userID uuid.UUID) (*WelcomeExperience, error) {
+	var exp WelcomeExperience
+	err := r.pool.QueryRow(ctx, `
+		SELECT welcome_experience_completed, welcome_experience_completed_at
+		FROM user_preferences
+		WHERE user_id = $1
+	`, userID).Scan(&exp.Completed, &exp.CompletedAt)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Return default state if not found
+			return &WelcomeExperience{
+				Completed:   false,
+				CompletedAt: nil,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &exp, nil
+}
+
+func (r *Repository) CompleteWelcomeExperience(ctx context.Context, userID uuid.UUID) (*WelcomeExperience, error) {
+	var exp WelcomeExperience
+	err := r.pool.QueryRow(ctx, `
+		INSERT INTO user_preferences (user_id, welcome_experience_completed, welcome_experience_completed_at)
+		VALUES ($1, TRUE, NOW())
+		ON CONFLICT (user_id) DO UPDATE 
+		SET welcome_experience_completed = TRUE,
+		    welcome_experience_completed_at = COALESCE(user_preferences.welcome_experience_completed_at, NOW())
+		RETURNING welcome_experience_completed, welcome_experience_completed_at
+	`, userID).Scan(&exp.Completed, &exp.CompletedAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &exp, nil
 }
